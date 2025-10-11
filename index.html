@@ -22,14 +22,13 @@
   .shift{background:#071428;border-radius:8px;padding:8px;margin-bottom:10px;border:1px solid rgba(255,255,255,0.03)}
   .meta{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
   .title{font-weight:600}
-  .time{font-size:12px;color:var(--muted)}
   .progress{height:8px;background:rgba(255,255,255,0.03);border-radius:99px;overflow:hidden;margin-bottom:8px}
   .bar{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));width:0%}
   .list{display:flex;flex-direction:column;gap:6px}
   .person{background:rgba(255,255,255,0.02);padding:6px;border-radius:6px;display:flex;align-items:center;gap:8px;justify-content:space-between}
   .avatar{width:28px;height:28px;border-radius:999px;background:#1f2937;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700}
   .btn{margin-top:8px;border:none;padding:8px 10px;border-radius:8px;background:var(--accent);color:white;cursor:pointer;width:100%;transition:opacity 0.3s ease}
-  .btn[disabled]{opacity:.45;cursor:not-allowed;background:rgba(107,70,193,0.45)}
+  .btn[disabled]{opacity:.45;cursor:not-allowed}
   .delete-btn{color:var(--danger);cursor:pointer;font-weight:bold;margin-left:8px}
   footer{margin-top:14px;color:var(--muted);font-size:13px}
   .admin-panel{display:flex;gap:8px;align-items:center}
@@ -172,6 +171,11 @@
   }
 
   function onRegister(shiftId) {
+    if (!isRegistrationOpen()) {
+      alert("🔒 Ngoài giờ đăng ký (chỉ mở 19:50 Thứ 6 → 21:00 Thứ 7)");
+      return;
+    }
+
     let name = localStorage.getItem('myName');
     if (!name) {
       name = prompt('Nhập tên của bạn:').trim();
@@ -196,19 +200,7 @@
     });
   }
 
-  function initStructureIfEmpty() {
-    shiftsRef.once('value').then(s => {
-      if (s.exists()) return;
-      const init = {};
-      days.forEach(day => {
-        const slots = (day.key === 'cn') ? slotsCN : slotsDefault;
-        slots.forEach(s => init[`${day.key}_${s.id}`] = []);
-      });
-      shiftsRef.set(init);
-    });
-  }
-  initStructureIfEmpty();
-
+  // === Admin ===
   const ADMIN_PASSWORD = "Anbinh123";
   function setAdminMode(on) {
     if (on) {
@@ -242,25 +234,24 @@
   };
   if (sessionStorage.getItem('isAdmin') === 'true') setAdminMode(true);
 
-  // === Giới hạn thời gian mở: 19h50 Thứ 6 → 21h00 Thứ 7 ===
-  function checkAccessTime() {
+  // === Giới hạn thời gian đăng ký ===
+  function isRegistrationOpen() {
     const now = new Date();
     const day = now.getDay(); // 0=CN, 5=Thứ 6, 6=Thứ 7
     const hour = now.getHours();
     const minute = now.getMinutes();
+    return (day === 5 && (hour > 19 || (hour === 19 && minute >= 50))) ||
+           (day === 6 && (hour < 21 || (hour === 21 && minute === 0)));
+  }
 
-    let isOpen = false;
-    if (day === 5 && (hour > 19 || (hour === 19 && minute >= 50))) isOpen = true;
-    if (day === 6 && (hour < 21 || (hour === 21 && minute === 0))) isOpen = true;
-
+  function updateButtonStates() {
+    const isOpen = isRegistrationOpen();
     const buttons = document.querySelectorAll(".btn");
     buttons.forEach(btn => {
-      if (["adminBtn", "resetBtn", "logoutBtn"].includes(btn.id)) return;
+      if (["adminBtn","resetBtn","logoutBtn"].includes(btn.id)) return;
       btn.disabled = !isOpen;
-      btn.style.opacity = isOpen ? "1" : "0.4";
-      btn.style.cursor = isOpen ? "pointer" : "not-allowed";
+      btn.style.opacity = isOpen ? "1" : "0.45";
       btn.title = isOpen ? "" : "Ngoài giờ đăng ký";
-      btn.textContent = isOpen ? btn.textContent.replace("🔒 ", "") : "🔒 Ngoài giờ đăng ký";
     });
 
     if (isOpen) {
@@ -273,8 +264,9 @@
       statusBanner.textContent = "🔒 Ngoài giờ đăng ký (sẽ mở 19:50 Thứ 6)";
     }
   }
-  checkAccessTime();
-  setInterval(checkAccessTime, 60000);
+
+  updateButtonStates();
+  setInterval(updateButtonStates, 60000);
 </script>
 </body>
 </html>
