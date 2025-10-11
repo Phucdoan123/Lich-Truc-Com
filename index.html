@@ -97,7 +97,6 @@
   const logoutBtn = document.getElementById('logoutBtn');
   const statusBanner = document.getElementById('statusBanner');
 
-  // === Hiển thị bảng ===
   function buildGrid() {
     board.innerHTML = '';
     days.forEach(day => {
@@ -120,7 +119,6 @@
   }
   buildGrid();
 
-  // === Realtime cập nhật ===
   shiftsRef.on('value', snap => {
     const data = snap.val() || {};
     days.forEach(day => {
@@ -158,7 +156,6 @@
     btnEl.textContent = arr.length >= MAX ? 'Đã đầy' : 'Đăng ký';
   }
 
-  // === Đăng ký ca ===
   function onRegister(shiftId) {
     let name = localStorage.getItem('myName');
     if (!name) {
@@ -175,7 +172,6 @@
     });
   }
 
-  // === Xoá tên bản thân ===
   function removeSelfFromShift(shiftId, name) {
     if (!confirm(`Bạn có chắc muốn xóa "${name}" khỏi ca này?`)) return;
     const ref = db.ref('shifts/' + shiftId);
@@ -185,7 +181,6 @@
     });
   }
 
-  // === Tạo cấu trúc rỗng nếu chưa có ===
   function initStructureIfEmpty() {
     shiftsRef.once('value').then(s => {
       if (s.exists()) return;
@@ -199,7 +194,6 @@
   }
   initStructureIfEmpty();
 
-  // === Chế độ admin ===
   const ADMIN_PASSWORD = "Anbinh123";
   function setAdminMode(on) {
     if (on) {
@@ -244,11 +238,11 @@
     if (day === 5 && (hour > 19 || (hour === 19 && minute >= 50))) isOpen = true;
     if (day === 6 && (hour < 21 || (hour === 21 && minute === 0))) isOpen = true;
 
+    // Ẩn/hiện nút đăng ký
     const buttons = document.querySelectorAll(".btn");
     buttons.forEach(btn => {
       if (["adminBtn", "resetBtn", "logoutBtn"].includes(btn.id)) return;
-      btn.disabled = !isOpen;
-      btn.textContent = isOpen ? btn.textContent.replace("🔒 ", "") : "🔒 Ngoài giờ đăng ký";
+      btn.style.display = isOpen ? "block" : "none";
     });
 
     if (isOpen) {
