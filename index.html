@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Đăng ký trực cơm — Bảng tuần</title>
+
+<style>
+  :root{
+    --bg:#071021; --card:#0b1220; --accent:#6b46c1; --muted:#9aa4b2; --text:#e6eef6;
+    --accent2:#3b82f6; --danger:#ef4444;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Helvetica,Arial;background:linear-gradient(180deg,#061326,#081428);color:var(--text);padding:18px}
+  header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:12px;flex-wrap:wrap}
+  h1{margin:0;font-size:20px}
+  .controls{display:flex;gap:8px;align-items:center}
+  .board-wrap{overflow:auto}
+  .board{display:grid;grid-template-columns:repeat(6, 1fr);gap:12px}
+  .col{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:10px;padding:12px;border:1px solid rgba(255,255,255,0.03);min-height:160px}
+  .col h3{margin:0 0 8px 0;font-size:14px;color:#cbd5e1;text-align:center}
+  .shift{background:#071428;border-radius:8px;padding:8px;margin-bottom:10px;border:1px solid rgba(255,255,255,0.03)}
+  .meta{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+  .title{font-weight:600}
+  .time{font-size:12px;color:var(--muted)}
+  .progress{height:8px;background:rgba(255,255,255,0.03);border-radius:99px;overflow:hidden;margin-bottom:8px}
+  .bar{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));width:0%}
+  .list{display:flex;flex-direction:column;gap:6px}
+  .person{background:rgba(255,255,255,0.02);padding:6px;border-radius:6px;display:flex;align-items:center;gap:8px;justify-content:space-between}
+  .avatar{width:28px;height:28px;border-radius:999px;background:#1f2937;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700}
+  .btn{margin-top:8px;border:none;padding:8px 10px;border-radius:8px;background:var(--accent);color:white;cursor:pointer;width:100%}
+  .btn[disabled]{opacity:.45;cursor:not-allowed;background:rgba(107,70,193,0.45)}
+  .delete-btn{color:var(--danger);cursor:pointer;font-weight:bold;margin-left:8px}
+  footer{margin-top:14px;color:var(--muted);font-size:13px}
+  .admin-panel{display:flex;gap:8px;align-items:center}
+  .small{font-size:13px;color:var(--muted)}
+  #statusBanner{padding:10px;text-align:center;border-radius:8px;margin-bottom:10px;font-weight:600}
+  @media(max-width:1100px){ .board{grid-template-columns:repeat(3, 1fr)} }
+  @media(max-width:720px){ .board{grid-template-columns:repeat(1, 1fr)} header{flex-direction:column;align-items:flex-start} }
+</style>
+</head>
+
+<body>
+<header>
+  <div>
+    <h1>Đăng ký trực cơm — Bảng tuần</h1>
+    <div class="small">Thứ 2 → Thứ 7 (Sáng/Chiều). Thêm: Chiều Chủ Nhật. Mỗi ca tối đa 3 người.</div>
+  </div>
+  <div class="controls">
+    <div class="admin-panel">
+      <button id="adminBtn" class="btn" style="background:transparent;border:1px solid rgba(255,255,255,0.06);padding:6px 10px">Đăng nhập Admin</button>
+      <button id="resetBtn" class="btn" style="background:var(--danger);display:none">🔄 Reset Tuần (Admin)</button>
+      <button id="logoutBtn" class="btn" style="background:#374151;display:none">🚪 Đăng xuất</button>
+    </div>
+  </div>
+</header>
+
+<div id="statusBanner"></div>
+<div class="board-wrap"><div id="board" class="board"></div></div>
+<footer>Ghi chú: Bấm "Đăng ký" → nhập tên. Bấm ❌ để xóa tên của chính bạn. Hệ thống cập nhật realtime.</footer>
+
+<!-- Firebase SDKs đặt TRƯỚC code chính -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyCZ8o7Z855RhsncCZlEt4zDe6ps-29RAq0",
+    authDomain: "lich-truc-com.firebaseapp.com",
+    databaseURL: "https://lich-truc-com-default-rtdb.firebaseio.com",
+    projectId: "lich-truc-com",
+    storageBucket: "lich-truc-com.firebasestorage.app",
+    messagingSenderId: "769659188277",
+    appId: "1:769659188277:web:da5226a15dbc0f87d46d7c"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+  const shiftsRef = db.ref('shifts');
+
+  const days = [
+    { label: "Thứ 2", key: "thu2" },
+    { label: "Thứ 3", key: "thu3" },
+    { label: "Thứ 4", key: "thu4" },
+    { label: "Thứ 5", key: "thu5" },
+    { label: "Thứ 6", key: "thu6" },
+    { label: "Thứ 7", key: "thu7" },
+    { label: "Chủ Nhật", key: "cn" }
+  ];
+  const slotsDefault = [{ id: "ca1", title: "Sáng" }, { id: "ca2", title: "Chiều" }];
+  const slotsCN = [{ id: "ca2", title: "Chiều" }];
+  const MAX = 3;
+
+  const board = document.getElementById('board');
+  const resetBtn = document.getElementById('resetBtn');
+  const adminBtn = document.getElementById('adminBtn');
+  const logoutBtn = document.getElementById('logoutBtn');
+  const statusBanner = document.getElementById('statusBanner');
+
+  // === Hiển thị bảng ===
+  function buildGrid() {
+    board.innerHTML = '';
+    days.forEach(day => {
+      const col = document.createElement('div');
+      col.className = 'col';
+      col.innerHTML = `<h3>${day.label}</h3>`;
+      const slots = (day.key === 'cn') ? slotsCN : slotsDefault;
+      slots.forEach(s => {
+        const shiftId = `${day.key}_${s.id}`;
+        col.innerHTML += `
+          <div class="shift">
+            <div class="meta"><div class="title">${s.title}</div></div>
+            <div class="progress"><div class="bar" id="bar_${shiftId}"></div></div>
+            <div class="list" id="list_${shiftId}"></div>
+            <button class="btn" id="btn_${shiftId}" onclick="onRegister('${shiftId}')">Đăng ký</button>
+          </div>`;
+      });
+      board.appendChild(col);
+    });
+  }
+  buildGrid();
+
+  // === Realtime cập nhật ===
+  shiftsRef.on('value', snap => {
+    const data = snap.val() || {};
+    days.forEach(day => {
+      const slots = (day.key === 'cn') ? slotsCN : slotsDefault;
+      slots.forEach(s => updateShiftUI(`${day.key}_${s.id}`, data[`${day.key}_${s.id}`] || []));
+    });
+  });
+
+  function updateShiftUI(id, arr) {
+    const listEl = document.getElementById('list_' + id);
+    const barEl = document.getElementById('bar_' + id);
+    const btnEl = document.getElementById('btn_' + id);
+    const myName = localStorage.getItem('myName');
+    listEl.innerHTML = '';
+    arr.forEach(name => {
+      const p = document.createElement('div');
+      p.className = 'person';
+      p.innerHTML = `
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="avatar">${name.slice(0,1).toUpperCase()}</div>
+          <div>${name}</div>
+        </div>`;
+      if (myName && myName === name) {
+        const del = document.createElement('span');
+        del.className = 'delete-btn';
+        del.textContent = '❌';
+        del.onclick = () => removeSelfFromShift(id, name);
+        p.appendChild(del);
+      }
+      listEl.appendChild(p);
+    });
+    const pct = Math.min(100, (arr.length / MAX) * 100);
+    barEl.style.width = pct + '%';
+    btnEl.disabled = arr.length >= MAX;
+    btnEl.textContent = arr.length >= MAX ? 'Đã đầy' : 'Đăng ký';
+  }
+
+  // === Đăng ký ca ===
+  function onRegister(shiftId) {
+    let name = localStorage.getItem('myName');
+    if (!name) {
+      name = prompt('Nhập tên của bạn:').trim();
+      if (!name) return;
+      localStorage.setItem('myName', name);
+    }
+    const ref = db.ref('shifts/' + shiftId);
+    ref.transaction(current => {
+      if (!current) current = [];
+      if (current.includes(name) || current.length >= MAX) return current;
+      current.push(name);
+      return current;
+    });
+  }
+
+  // === Xoá tên bản thân ===
+  function removeSelfFromShift(shiftId, name) {
+    if (!confirm(`Bạn có chắc muốn xóa "${name}" khỏi ca này?`)) return;
+    const ref = db.ref('shifts/' + shiftId);
+    ref.transaction(current => {
+      if (!current) return current;
+      return current.filter(n => n !== name);
+    });
+  }
+
+  // === Tạo cấu trúc rỗng nếu chưa có ===
+  function initStructureIfEmpty() {
+    shiftsRef.once('value').then(s => {
+      if (s.exists()) return;
+      const init = {};
+      days.forEach(day => {
+        const slots = (day.key === 'cn') ? slotsCN : slotsDefault;
+        slots.forEach(s => init[`${day.key}_${s.id}`] = []);
+      });
+      shiftsRef.set(init);
+    });
+  }
+  initStructureIfEmpty();
+
+  // === Chế độ admin ===
+  const ADMIN_PASSWORD = "Anbinh123";
+  function setAdminMode(on) {
+    if (on) {
+      resetBtn.style.display = 'inline-block';
+      logoutBtn.style.display = 'inline-block';
+      adminBtn.style.display = 'none';
+      sessionStorage.setItem('isAdmin', 'true');
+    } else {
+      resetBtn.style.display = 'none';
+      logoutBtn.style.display = 'none';
+      adminBtn.style.display = 'inline-block';
+      sessionStorage.removeItem('isAdmin');
+    }
+  }
+  adminBtn.onclick = () => {
+    const pass = prompt('Nhập mật khẩu Admin:');
+    if (pass === ADMIN_PASSWORD) {
+      alert('✅ Đã đăng nhập Admin');
+      setAdminMode(true);
+    } else alert('❌ Sai mật khẩu');
+  };
+  logoutBtn.onclick = () => { alert('🚪 Đã đăng xuất'); setAdminMode(false); };
+  resetBtn.onclick = () => {
+    if (!confirm('Reset toàn bộ lịch tuần?')) return;
+    const updates = {};
+    days.forEach(day => {
+      const slots = (day.key === 'cn') ? slotsCN : slotsDefault;
+      slots.forEach(s => updates[`${day.key}_${s.id}`] = []);
+    });
+    shiftsRef.set(updates);
+  };
+  if (sessionStorage.getItem('isAdmin') === 'true') setAdminMode(true);
+
+  // === Giới hạn thời gian mở: 19h50 Thứ 6 → 21h00 Thứ 7 ===
+  function checkAccessTime() {
+    const now = new Date();
+    const day = now.getDay(); // 0=CN, 5=Thứ 6, 6=Thứ 7
+    const hour = now.getHours();
+    const minute = now.getMinutes();
+
+    let isOpen = false;
+    if (day === 5 && (hour > 19 || (hour === 19 && minute >= 50))) isOpen = true;
+    if (day === 6 && (hour < 21 || (hour === 21 && minute === 0))) isOpen = true;
+
+    const buttons = document.querySelectorAll(".btn");
+    buttons.forEach(btn => {
+      if (["adminBtn", "resetBtn", "logoutBtn"].includes(btn.id)) return;
+      btn.disabled = !isOpen;
+      btn.textContent = isOpen ? btn.textContent.replace("🔒 ", "") : "🔒 Ngoài giờ đăng ký";
+    });
+
+    if (isOpen) {
+      statusBanner.style.background = "rgba(16,185,129,0.15)";
+      statusBanner.style.color = "#10b981";
+      statusBanner.textContent = "🟢 Đang trong thời gian đăng ký (19:50 Thứ 6 → 21:00 Thứ 7)";
+    } else {
+      statusBanner.style.background = "rgba(239,68,68,0.15)";
+      statusBanner.style.color = "#ef4444";
+      statusBanner.textContent = "🔒 Ngoài giờ đăng ký (sẽ mở 19:50 Thứ 6)";
+    }
+  }
+  checkAccessTime();
+  setInterval(checkAccessTime, 60000);
+</script>
+</body>
+</html>
