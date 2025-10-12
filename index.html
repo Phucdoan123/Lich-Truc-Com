@@ -258,57 +258,58 @@
 
   updateButtonStates();
   setInterval(updateButtonStates, 60000);
+</script>
 
-  // --- ADMIN EXTENSIONS (THÊM KHÔNG SỬA GỐC) ---
-  function loginAdminExtra() {
-    const pass = prompt('Nhập mật khẩu Admin:');
-    if (pass === ADMIN_PASSWORD) {
-      alert('✅ Admin bật quyền nâng cao');
-      sessionStorage.setItem('isAdmin', 'true');
-      enableAdminExtra();
-    } else alert('❌ Sai mật khẩu');
-  }
-
-  function enableAdminExtra() {
-    // Admin có thể xóa bất kỳ ai
-    document.querySelectorAll('.list').forEach(listEl => {
-      listEl.childNodes.forEach(personEl => {
-        const delBtn = personEl.querySelector('.delete-btn');
-        if (delBtn) return;
-        const nameDiv = personEl.querySelector('div:nth-child(2)');
-        if (!nameDiv) return;
-        const name = nameDiv.textContent;
-        const del = document.createElement('span');
-        del.className = 'delete-btn';
-        del.textContent = '❌';
-        del.onclick = () => {
-          if (!confirm(`Bạn có chắc muốn xóa "${name}" khỏi ca này?`)) return;
-          const shiftId = listEl.id.replace('list_', '');
-          const ref = firebase.database().ref('shifts/' + shiftId);
-          ref.transaction(current => current ? current.filter(n => n !== name) : []);
-        };
-        personEl.appendChild(del);
-      });
-    });
-
-    // Admin bỏ qua giới hạn giờ đăng ký
-    document.querySelectorAll('.btn').forEach(btn => {
-      if (!["adminBtn","resetBtn","logoutBtn"].includes(btn.id)) {
-        btn.disabled = false;
-        btn.style.opacity = '1';
-        btn.title = '';
+<!-- === THÊM SCRIPT ADMIN KHÔNG SỬA CODE GỐC === -->
+<script>
+  (function(){
+    const originalOnRegister = window.onRegister;
+    window.onRegister = function(shiftId) {
+      if (sessionStorage.getItem('isAdmin') === 'true') {
+        // Admin bỏ qua giới hạn giờ
+        let name = localStorage.getItem('myName');
+        if (!name) {
+          name = prompt('Nhập tên của bạn:').trim();
+          if (!name) return;
+          localStorage.setItem('myName', name);
+        }
+        const ref = firebase.database().ref('shifts/' + shiftId);
+        ref.transaction(current => {
+          if (!current) current = [];
+          if (current.includes(name) || current.length >= 3) return current;
+          current.push(name);
+          return current;
+        });
+      } else {
+        originalOnRegister(shiftId);
       }
-    });
+    };
 
-    // Banner thông báo admin
-    statusBanner.style.background = "rgba(16,185,129,0.15)";
-    statusBanner.style.color = "#10b981";
-    statusBanner.textContent = "🟢 Admin đang bật, có thể thao tác mọi lúc";
-  }
+    // Admin có thể xóa bất kỳ ai
+    function enableAdminDeleteAll() {
+      document.querySelectorAll('.list').forEach(listEl => {
+        listEl.childNodes.forEach(personEl => {
+          const delBtnExists = personEl.querySelector('.delete-btn');
+          if (delBtnExists) return;
+          const nameDiv = personEl.querySelector('div:nth-child(2)');
+          if (!nameDiv) return;
+          const name = nameDiv.textContent;
+          const del = document.createElement('span');
+          del.className = 'delete-btn';
+          del.textContent = '❌';
+          del.onclick = () => {
+            if (!confirm(`Bạn có chắc muốn xóa "${name}" khỏi ca này?`)) return;
+            const shiftId = listEl.id.replace('list_', '');
+            const ref = firebase.database().ref('shifts/' + shiftId);
+            ref.transaction(current => current ? current.filter(n => n !== name) : []);
+          };
+          personEl.appendChild(del);
+        });
+      });
+    }
 
-  // Tự động bật quyền admin nếu đã đăng nhập
-  if (sessionStorage.getItem('isAdmin') === 'true') enableAdminExtra();
-  // --- END ADMIN EXTENSIONS ---
+    if (sessionStorage.getItem('isAdmin') === 'true') enableAdminDeleteAll();
+  })();
 </script>
 </body>
 </html>
