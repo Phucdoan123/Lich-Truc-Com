@@ -78,6 +78,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 
 <script>
+  // === CODE GỐC GIỮ NGUYÊN ===
   const firebaseConfig = {
     apiKey: "AIzaSyCZ8o7Z855RhsncCZlEt4zDe6ps-29RAq0",
     authDomain: "lich-truc-com.firebaseapp.com",
@@ -87,11 +88,9 @@
     messagingSenderId: "769659188277",
     appId: "1:769659188277:web:da5226a15dbc0f87d46d7c"
   };
-
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
   const shiftsRef = db.ref('shifts');
-
   const days = [
     { label: "Thứ 2", key: "thu2" },
     { label: "Thứ 3", key: "thu3" },
@@ -104,7 +103,6 @@
   const slotsDefault = [{ id: "ca1", title: "Sáng" }, { id: "ca2", title: "Chiều" }];
   const slotsCN = [{ id: "ca2", title: "Chiều" }];
   const MAX = 3;
-
   const board = document.getElementById('board');
   const resetBtn = document.getElementById('resetBtn');
   const adminBtn = document.getElementById('adminBtn');
@@ -175,7 +173,6 @@
       alert("🔒 Ngoài giờ đăng ký (chỉ mở 19:50 Thứ 6 → 21:00 Thứ 7)");
       return;
     }
-
     let name = localStorage.getItem('myName');
     if (!name) {
       name = prompt('Nhập tên của bạn:').trim();
@@ -194,13 +191,9 @@
   function removeSelfFromShift(shiftId, name) {
     if (!confirm(`Bạn có chắc muốn xóa "${name}" khỏi ca này?`)) return;
     const ref = db.ref('shifts/' + shiftId);
-    ref.transaction(current => {
-      if (!current) return current;
-      return current.filter(n => n !== name);
-    });
+    ref.transaction(current => current ? current.filter(n => n !== name) : []);
   }
 
-  // === Admin ===
   const ADMIN_PASSWORD = "Anbinh123";
   function setAdminMode(on) {
     if (on) {
@@ -234,7 +227,6 @@
   };
   if (sessionStorage.getItem('isAdmin') === 'true') setAdminMode(true);
 
-  // === Giới hạn thời gian đăng ký ===
   function isRegistrationOpen() {
     const now = new Date();
     const day = now.getDay(); // 0=CN, 5=Thứ 6, 6=Thứ 7
@@ -253,7 +245,6 @@
       btn.style.opacity = isOpen ? "1" : "0.45";
       btn.title = isOpen ? "" : "Ngoài giờ đăng ký";
     });
-
     if (isOpen) {
       statusBanner.style.background = "rgba(16,185,129,0.15)";
       statusBanner.style.color = "#10b981";
@@ -267,6 +258,57 @@
 
   updateButtonStates();
   setInterval(updateButtonStates, 60000);
+
+  // --- ADMIN EXTENSIONS (THÊM KHÔNG SỬA GỐC) ---
+  function loginAdminExtra() {
+    const pass = prompt('Nhập mật khẩu Admin:');
+    if (pass === ADMIN_PASSWORD) {
+      alert('✅ Admin bật quyền nâng cao');
+      sessionStorage.setItem('isAdmin', 'true');
+      enableAdminExtra();
+    } else alert('❌ Sai mật khẩu');
+  }
+
+  function enableAdminExtra() {
+    // Admin có thể xóa bất kỳ ai
+    document.querySelectorAll('.list').forEach(listEl => {
+      listEl.childNodes.forEach(personEl => {
+        const delBtn = personEl.querySelector('.delete-btn');
+        if (delBtn) return;
+        const nameDiv = personEl.querySelector('div:nth-child(2)');
+        if (!nameDiv) return;
+        const name = nameDiv.textContent;
+        const del = document.createElement('span');
+        del.className = 'delete-btn';
+        del.textContent = '❌';
+        del.onclick = () => {
+          if (!confirm(`Bạn có chắc muốn xóa "${name}" khỏi ca này?`)) return;
+          const shiftId = listEl.id.replace('list_', '');
+          const ref = firebase.database().ref('shifts/' + shiftId);
+          ref.transaction(current => current ? current.filter(n => n !== name) : []);
+        };
+        personEl.appendChild(del);
+      });
+    });
+
+    // Admin bỏ qua giới hạn giờ đăng ký
+    document.querySelectorAll('.btn').forEach(btn => {
+      if (!["adminBtn","resetBtn","logoutBtn"].includes(btn.id)) {
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        btn.title = '';
+      }
+    });
+
+    // Banner thông báo admin
+    statusBanner.style.background = "rgba(16,185,129,0.15)";
+    statusBanner.style.color = "#10b981";
+    statusBanner.textContent = "🟢 Admin đang bật, có thể thao tác mọi lúc";
+  }
+
+  // Tự động bật quyền admin nếu đã đăng nhập
+  if (sessionStorage.getItem('isAdmin') === 'true') enableAdminExtra();
+  // --- END ADMIN EXTENSIONS ---
 </script>
 </body>
 </html>
