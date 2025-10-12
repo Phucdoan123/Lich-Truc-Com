@@ -78,7 +78,6 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 
 <script>
-  // === CODE GỐC GIỮ NGUYÊN ===
   const firebaseConfig = {
     apiKey: "AIzaSyCZ8o7Z855RhsncCZlEt4zDe6ps-29RAq0",
     authDomain: "lich-truc-com.firebaseapp.com",
@@ -88,9 +87,11 @@
     messagingSenderId: "769659188277",
     appId: "1:769659188277:web:da5226a15dbc0f87d46d7c"
   };
+
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
   const shiftsRef = db.ref('shifts');
+
   const days = [
     { label: "Thứ 2", key: "thu2" },
     { label: "Thứ 3", key: "thu3" },
@@ -103,6 +104,7 @@
   const slotsDefault = [{ id: "ca1", title: "Sáng" }, { id: "ca2", title: "Chiều" }];
   const slotsCN = [{ id: "ca2", title: "Chiều" }];
   const MAX = 3;
+
   const board = document.getElementById('board');
   const resetBtn = document.getElementById('resetBtn');
   const adminBtn = document.getElementById('adminBtn');
@@ -170,9 +172,10 @@
 
   function onRegister(shiftId) {
     if (!isRegistrationOpen()) {
-      alert("🔒 Ngoài giờ đăng ký (chỉ mở vào 19:50 Thứ 6 → 21:00 Thứ 7)");
+      alert("🔒 Ngoài giờ đăng ký (chỉ mở 19:50 Thứ 6 → 21:00 Thứ 7)");
       return;
     }
+
     let name = localStorage.getItem('myName');
     if (!name) {
       name = prompt('Nhập tên của bạn:').trim();
@@ -191,9 +194,13 @@
   function removeSelfFromShift(shiftId, name) {
     if (!confirm(`Bạn có chắc muốn xóa "${name}" khỏi ca này?`)) return;
     const ref = db.ref('shifts/' + shiftId);
-    ref.transaction(current => current ? current.filter(n => n !== name) : []);
+    ref.transaction(current => {
+      if (!current) return current;
+      return current.filter(n => n !== name);
+    });
   }
 
+  // === Admin ===
   const ADMIN_PASSWORD = "Anbinh123";
   function setAdminMode(on) {
     if (on) {
@@ -227,9 +234,10 @@
   };
   if (sessionStorage.getItem('isAdmin') === 'true') setAdminMode(true);
 
+  // === Giới hạn thời gian đăng ký ===
   function isRegistrationOpen() {
     const now = new Date();
-    const day = now.getDay();
+    const day = now.getDay(); // 0=CN, 5=Thứ 6, 6=Thứ 7
     const hour = now.getHours();
     const minute = now.getMinutes();
     return (day === 5 && (hour > 19 || (hour === 19 && minute >= 50))) ||
@@ -261,72 +269,82 @@
   setInterval(updateButtonStates, 60000);
 </script>
 
-<!-- === THÊM SCRIPT ADMIN NÂNG CAO KHÔNG CHỈNH SỬA CODE GỐC === -->
+<!-- ✅ PHẦN THÊM CHO ADMIN KHÔNG GIỚI HẠN VÀ XÓA TỰ DO -->
 <script>
-  (function(){
-    const originalOnRegister = window.onRegister;
-    window.onRegister = function(shiftId) {
-      if (sessionStorage.getItem('isAdmin') === 'true') {
-        let name = localStorage.getItem('myName');
-        if (!name) {
-          name = prompt('Nhập tên của bạn:').trim();
-          if (!name) return;
-          localStorage.setItem('myName', name);
-        }
-        const ref = firebase.database().ref('shifts/' + shiftId);
-        ref.transaction(current => {
-          if (!current) current = [];
-          if (current.includes(name) || current.length >= 3) return current;
-          current.push(name);
-          return current;
-        });
-      } else {
-        originalOnRegister(shiftId);
+(function(){
+  const originalOnRegister = window.onRegister;
+  window.onRegister = function(shiftId){
+    if(sessionStorage.getItem('isAdmin')==='true'){
+      let name=localStorage.getItem('myName');
+      if(!name){
+        name=prompt('Nhập tên của bạn:').trim();
+        if(!name) return;
+        localStorage.setItem('myName',name);
       }
-    };
-
-    const originalUpdateButtonStates = window.updateButtonStates;
-    window.updateButtonStates = function() {
-      originalUpdateButtonStates();
-      if (sessionStorage.getItem('isAdmin') === 'true') {
-        document.querySelectorAll(".btn").forEach(btn => {
-          if (["adminBtn","resetBtn","logoutBtn"].includes(btn.id)) return;
-          btn.disabled = false;
-          btn.style.opacity = "1";
-          btn.title = "";
-        });
-        const statusBanner = document.getElementById('statusBanner');
-        statusBanner.style.background = "rgba(16,185,129,0.15)";
-        statusBanner.style.color = "#10b981";
-        statusBanner.textContent = "🟢 Đang trong thời gian đăng ký (Admin)";
-      }
-    };
-
-    function enableAdminDeleteAll() {
-      document.querySelectorAll('.list').forEach(listEl => {
-        listEl.childNodes.forEach(personEl => {
-          const delBtnExists = personEl.querySelector('.delete-btn');
-          if (delBtnExists) return;
-          const nameDiv = personEl.querySelector('div:nth-child(2)');
-          if (!nameDiv) return;
-          const name = nameDiv.textContent;
-          const del = document.createElement('span');
-          del.className = 'delete-btn';
-          del.textContent = '❌';
-          del.onclick = () => {
-            if (!confirm(`Bạn có chắc muốn xóa "${name}" khỏi ca này?`)) return;
-            const shiftId = listEl.id.replace('list_', '');
-            const ref = firebase.database().ref('shifts/' + shiftId);
-            ref.transaction(current => current ? current.filter(n => n !== name) : []);
-          };
-          personEl.appendChild(del);
-        });
+      const ref=firebase.database().ref('shifts/'+shiftId);
+      ref.transaction(current=>{
+        if(!current) current=[];
+        if(current.includes(name)||current.length>=3) return current;
+        current.push(name);
+        return current;
       });
-    }
+    }else originalOnRegister(shiftId);
+  };
 
-    if (sessionStorage.getItem('isAdmin') === 'true') enableAdminDeleteAll();
-  })();
+  const originalUpdateButtonStates = window.updateButtonStates;
+  window.updateButtonStates = function(){
+    originalUpdateButtonStates();
+    if(sessionStorage.getItem('isAdmin')==='true'){
+      document.querySelectorAll(".btn").forEach(btn=>{
+        if(["adminBtn","resetBtn","logoutBtn"].includes(btn.id)) return;
+        btn.disabled=false;
+        btn.style.opacity="1";
+        btn.title="";
+      });
+      const statusBanner=document.getElementById('statusBanner');
+      statusBanner.style.background="rgba(16,185,129,0.15)";
+      statusBanner.style.color="#10b981";
+      statusBanner.textContent="🟢 Admin: Luôn được phép đăng ký";
+    }
+  };
+
+  function enableAdminDeleteAll(){
+    document.querySelectorAll('.list').forEach(listEl=>{
+      listEl.childNodes.forEach(personEl=>{
+        const delBtnExists=personEl.querySelector('.delete-btn');
+        if(delBtnExists) return;
+        const nameDiv=personEl.querySelector('div:nth-child(2)');
+        if(!nameDiv) return;
+        const name=nameDiv.textContent;
+        const del=document.createElement('span');
+        del.className='delete-btn';
+        del.textContent='❌';
+        del.onclick=()=>{
+          if(!confirm(`Bạn có chắc muốn xóa "${name}" khỏi ca này?`)) return;
+          const shiftId=listEl.id.replace('list_','');
+          const ref=firebase.database().ref('shifts/'+shiftId);
+          ref.transaction(current=>current?current.filter(n=>n!==name):[]);
+        };
+        personEl.appendChild(del);
+      });
+    });
+  }
+
+  const originalSetAdminMode = window.setAdminMode;
+  window.setAdminMode = function(on){
+    originalSetAdminMode(on);
+    if(on){
+      updateButtonStates();
+      setTimeout(enableAdminDeleteAll,800);
+    }
+  };
+
+  if(sessionStorage.getItem('isAdmin')==='true'){
+    updateButtonStates();
+    setTimeout(enableAdminDeleteAll,1000);
+  }
+})();
 </script>
+
 </body>
 </html>
-
