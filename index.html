@@ -229,7 +229,7 @@
 
   function isRegistrationOpen() {
     const now = new Date();
-    const day = now.getDay(); // 0=CN, 5=Thứ 6, 6=Thứ 7
+    const day = now.getDay();
     const hour = now.getHours();
     const minute = now.getMinutes();
     return (day === 5 && (hour > 19 || (hour === 19 && minute >= 50))) ||
@@ -245,6 +245,7 @@
       btn.style.opacity = isOpen ? "1" : "0.45";
       btn.title = isOpen ? "" : "Ngoài giờ đăng ký";
     });
+
     if (isOpen) {
       statusBanner.style.background = "rgba(16,185,129,0.15)";
       statusBanner.style.color = "#10b981";
@@ -260,13 +261,12 @@
   setInterval(updateButtonStates, 60000);
 </script>
 
-<!-- === THÊM SCRIPT ADMIN KHÔNG SỬA CODE GỐC === -->
+<!-- === THÊM SCRIPT ADMIN NÂNG CAO KHÔNG CHỈNH SỬA CODE GỐC === -->
 <script>
   (function(){
     const originalOnRegister = window.onRegister;
     window.onRegister = function(shiftId) {
       if (sessionStorage.getItem('isAdmin') === 'true') {
-        // Admin bỏ qua giới hạn giờ
         let name = localStorage.getItem('myName');
         if (!name) {
           name = prompt('Nhập tên của bạn:').trim();
@@ -285,7 +285,23 @@
       }
     };
 
-    // Admin có thể xóa bất kỳ ai
+    const originalUpdateButtonStates = window.updateButtonStates;
+    window.updateButtonStates = function() {
+      originalUpdateButtonStates();
+      if (sessionStorage.getItem('isAdmin') === 'true') {
+        document.querySelectorAll(".btn").forEach(btn => {
+          if (["adminBtn","resetBtn","logoutBtn"].includes(btn.id)) return;
+          btn.disabled = false;
+          btn.style.opacity = "1";
+          btn.title = "";
+        });
+        const statusBanner = document.getElementById('statusBanner');
+        statusBanner.style.background = "rgba(16,185,129,0.15)";
+        statusBanner.style.color = "#10b981";
+        statusBanner.textContent = "🟢 Đang trong thời gian đăng ký (Admin)";
+      }
+    };
+
     function enableAdminDeleteAll() {
       document.querySelectorAll('.list').forEach(listEl => {
         listEl.childNodes.forEach(personEl => {
