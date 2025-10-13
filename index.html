@@ -264,22 +264,41 @@
   updateButtonStates();
   setInterval(updateButtonStates, 60000);
 
-  // === GHI LỊCH SỬ ĐĂNG NHẬP ADMIN (TỰ ĐỘNG, KHÔNG NHẬP EMAIL, CHỈ ADMIN XEM ĐƯỢC) ===
+  /* === GHI LỊCH SỬ ĐĂNG NHẬP ADMIN (EMAIL + IP + THIẾT BỊ, CHỈ ADMIN XEM) === */
   (function () {
     const logsRef = db.ref("admin_logins");
 
-    const originalAdminLogin = adminBtn.onclick;
-    adminBtn.onclick = () => {
-      const pass = prompt('Nhập mật khẩu Admin:');
+    async function getIP() {
+      try {
+        const res = await fetch("https://api.ipify.org?format=json");
+        const data = await res.json();
+        return data.ip;
+      } catch {
+        return "unknown";
+      }
+    }
+
+    function getDeviceType() {
+      const ua = navigator.userAgent;
+      if (/mobile/i.test(ua)) return "📱 Mobile";
+      if (/tablet/i.test(ua)) return "📱 Tablet";
+      return "💻 Desktop";
+    }
+
+    const originalAdminClick = adminBtn.onclick;
+    adminBtn.onclick = async () => {
+      const pass = prompt("Nhập mật khẩu Admin:");
       if (pass === ADMIN_PASSWORD) {
-        const email = "Admin";
-        const now = new Date();
-        const timeStr = now.toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" });
-        logsRef.push({ email, time: timeStr });
-        alert('✅ Đã đăng nhập Admin');
+        alert("✅ Đã đăng nhập Admin");
         setAdminMode(true);
+
+        const email = "admin@anbinh.system";
+        const ip = await getIP();
+        const device = getDeviceType();
+        const time = new Date().toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" });
+        logsRef.push({ email, ip, device, time });
       } else {
-        alert('❌ Sai mật khẩu');
+        alert("❌ Sai mật khẩu");
       }
     };
 
@@ -327,20 +346,23 @@
         const div = document.createElement("div");
         div.style.borderBottom = "1px solid rgba(255,255,255,0.05)";
         div.style.padding = "6px 0";
-        div.innerHTML = `<b>${i + 1}.</b> ${log.email}<br><span style="color:#9ca3af">${log.time}</span>`;
+        div.innerHTML = `
+          <b>${i + 1}.</b> ${log.email}<br>
+          🕒 <span style="color:#9ca3af">${log.time}</span><br>
+          🌐 IP: ${log.ip} &nbsp;&nbsp; 💻 ${log.device}
+        `;
         logDiv.appendChild(div);
       });
     });
 
-    modal.querySelector("#closeModal").onclick = () => { modal.style.display = "none"; };
-    historyBtn.onclick = () => { modal.style.display = "flex"; };
+    historyBtn.onclick = () => (modal.style.display = "flex");
+    modal.querySelector("#closeModal").onclick = () => (modal.style.display = "none");
 
-    const originalSetAdminMode = setAdminMode;
-    setAdminMode = function (on) {
-      originalSetAdminMode(on);
-      if (on) historyBtn.style.display = "inline-block";
-      else { historyBtn.style.display = "none"; modal.style.display = "none"; }
-    };
+    function toggleHistoryBtn() {
+      historyBtn.style.display = sessionStorage.getItem("isAdmin") ? "inline-block" : "none";
+    }
+    toggleHistoryBtn();
+    window.addEventListener("storage", toggleHistoryBtn);
   })();
 </script>
 </body>
