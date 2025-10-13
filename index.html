@@ -31,7 +31,7 @@
   .btn[disabled]{opacity:.45;cursor:not-allowed}
   .delete-btn{color:var(--danger);cursor:pointer;font-weight:bold;margin-left:8px}
   footer{margin-top:14px;color:var(--muted);font-size:13px}
-  .admin-panel{display:flex;gap:8px;align-items:center}
+  .admin-panel{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
   .small{font-size:13px;color:var(--muted)}
   #statusBanner{padding:10px;text-align:center;border-radius:8px;margin-bottom:10px;font-weight:600}
   [title]{position:relative}
@@ -64,6 +64,7 @@
     <div class="admin-panel">
       <button id="adminBtn" class="btn" style="background:transparent;border:1px solid rgba(255,255,255,0.06);padding:6px 10px">Đăng nhập Admin</button>
       <button id="resetBtn" class="btn" style="background:var(--danger);display:none">🔄 Reset Tuần (Admin)</button>
+      <button id="toggleOpenBtn" class="btn" style="background:#10b981;display:none">🟢 Bật đăng ký thủ công</button>
       <button id="logoutBtn" class="btn" style="background:#374151;display:none">🚪 Đăng xuất</button>
     </div>
   </div>
@@ -110,6 +111,8 @@
   const adminBtn = document.getElementById('adminBtn');
   const logoutBtn = document.getElementById('logoutBtn');
   const statusBanner = document.getElementById('statusBanner');
+  const toggleOpenBtn = document.getElementById('toggleOpenBtn');
+  let manualOpen = false;
 
   function buildGrid() {
     board.innerHTML = '';
@@ -171,7 +174,7 @@
   }
 
   function onRegister(shiftId) {
-    if (!isRegistrationOpen() && !sessionStorage.getItem('isAdmin')) {
+    if (!isRegistrationOpen() && !manualOpen && !sessionStorage.getItem('isAdmin')) {
       alert("🔒 Ngoài giờ đăng ký (chỉ mở 19:50 Thứ 6 → 21:00 Thứ 7)");
       return;
     }
@@ -205,15 +208,21 @@
     if (on) {
       resetBtn.style.display = 'inline-block';
       logoutBtn.style.display = 'inline-block';
+      toggleOpenBtn.style.display = 'inline-block';
       adminBtn.style.display = 'none';
       sessionStorage.setItem('isAdmin', 'true');
     } else {
       resetBtn.style.display = 'none';
       logoutBtn.style.display = 'none';
+      toggleOpenBtn.style.display = 'none';
       adminBtn.style.display = 'inline-block';
       sessionStorage.removeItem('isAdmin');
+      manualOpen = false;
+      toggleOpenBtn.textContent = "🟢 Bật đăng ký thủ công";
+      toggleOpenBtn.style.background = "#10b981";
     }
   }
+
   adminBtn.onclick = () => {
     const pass = prompt('Nhập mật khẩu Admin:');
     if (pass === ADMIN_PASSWORD) {
@@ -222,6 +231,14 @@
     } else alert('❌ Sai mật khẩu');
   };
   logoutBtn.onclick = () => { alert('🚪 Đã đăng xuất'); setAdminMode(false); };
+
+  toggleOpenBtn.onclick = () => {
+    manualOpen = !manualOpen;
+    toggleOpenBtn.textContent = manualOpen ? "🔴 Tắt mở đăng ký thủ công" : "🟢 Bật đăng ký thủ công";
+    toggleOpenBtn.style.background = manualOpen ? "#ef4444" : "#10b981";
+    updateButtonStates();
+  };
+
   resetBtn.onclick = () => {
     if (!confirm('Reset toàn bộ lịch tuần?')) return;
     const updates = {};
@@ -243,10 +260,10 @@
   }
 
   function updateButtonStates() {
-    const isOpen = isRegistrationOpen() || sessionStorage.getItem('isAdmin');
+    const isOpen = isRegistrationOpen() || manualOpen || sessionStorage.getItem('isAdmin');
     const buttons = document.querySelectorAll(".btn");
     buttons.forEach(btn => {
-      if (["adminBtn","resetBtn","logoutBtn"].includes(btn.id)) return;
+      if (["adminBtn","resetBtn","logoutBtn","toggleOpenBtn"].includes(btn.id)) return;
       btn.disabled = !isOpen;
       btn.style.opacity = isOpen ? "1" : "0.45";
       btn.title = isOpen ? "" : "Ngoài giờ đăng ký";
