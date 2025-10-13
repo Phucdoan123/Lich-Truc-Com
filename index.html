@@ -171,7 +171,7 @@
   }
 
   function onRegister(shiftId) {
-    if (!isRegistrationOpen()) {
+    if (!isRegistrationOpen() && !sessionStorage.getItem('isAdmin')) {
       alert("🔒 Ngoài giờ đăng ký (chỉ mở 19:50 Thứ 6 → 21:00 Thứ 7)");
       return;
     }
@@ -200,7 +200,6 @@
     });
   }
 
-  // === Admin ===
   const ADMIN_PASSWORD = "Anbinh123";
   function setAdminMode(on) {
     if (on) {
@@ -234,10 +233,9 @@
   };
   if (sessionStorage.getItem('isAdmin') === 'true') setAdminMode(true);
 
-  // === Giới hạn thời gian đăng ký ===
   function isRegistrationOpen() {
     const now = new Date();
-    const day = now.getDay(); // 0=CN, 5=Thứ 6, 6=Thứ 7
+    const day = now.getDay();
     const hour = now.getHours();
     const minute = now.getMinutes();
     return (day === 5 && (hour > 19 || (hour === 19 && minute >= 50))) ||
@@ -245,7 +243,7 @@
   }
 
   function updateButtonStates() {
-    const isOpen = isRegistrationOpen();
+    const isOpen = isRegistrationOpen() || sessionStorage.getItem('isAdmin');
     const buttons = document.querySelectorAll(".btn");
     buttons.forEach(btn => {
       if (["adminBtn","resetBtn","logoutBtn"].includes(btn.id)) return;
@@ -253,98 +251,97 @@
       btn.style.opacity = isOpen ? "1" : "0.45";
       btn.title = isOpen ? "" : "Ngoài giờ đăng ký";
     });
-
     if (isOpen) {
       statusBanner.style.background = "rgba(16,185,129,0.15)";
       statusBanner.style.color = "#10b981";
-      statusBanner.textContent = "🟢 Đang trong thời gian đăng ký (19:50 Thứ 6 → 21:00 Thứ 7)";
+      statusBanner.textContent = "🟢 Đang trong thời gian đăng ký";
     } else {
       statusBanner.style.background = "rgba(239,68,68,0.15)";
       statusBanner.style.color = "#ef4444";
       statusBanner.textContent = "🔒 Ngoài giờ đăng ký (sẽ mở 19:50 Thứ 6)";
     }
   }
-
   updateButtonStates();
   setInterval(updateButtonStates, 60000);
-</script>
 
-<!-- ✅ PHẦN THÊM CHO ADMIN KHÔNG GIỚI HẠN VÀ XÓA TỰ DO -->
-<script>
-(function(){
-  const originalOnRegister = window.onRegister;
-  window.onRegister = function(shiftId){
-    if(sessionStorage.getItem('isAdmin')==='true'){
-      let name=localStorage.getItem('myName');
-      if(!name){
-        name=prompt('Nhập tên của bạn:').trim();
-        if(!name) return;
-        localStorage.setItem('myName',name);
+  // === GHI LỊCH SỬ ĐĂNG NHẬP ADMIN (TỰ ĐỘNG, KHÔNG NHẬP EMAIL, CHỈ ADMIN XEM ĐƯỢC) ===
+  (function () {
+    const logsRef = db.ref("admin_logins");
+
+    const originalAdminLogin = adminBtn.onclick;
+    adminBtn.onclick = () => {
+      const pass = prompt('Nhập mật khẩu Admin:');
+      if (pass === ADMIN_PASSWORD) {
+        const email = "Admin";
+        const now = new Date();
+        const timeStr = now.toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" });
+        logsRef.push({ email, time: timeStr });
+        alert('✅ Đã đăng nhập Admin');
+        setAdminMode(true);
+      } else {
+        alert('❌ Sai mật khẩu');
       }
-      const ref=firebase.database().ref('shifts/'+shiftId);
-      ref.transaction(current=>{
-        if(!current) current=[];
-        if(current.includes(name)||current.length>=3) return current;
-        current.push(name);
-        return current;
-      });
-    }else originalOnRegister(shiftId);
-  };
+    };
 
-  const originalUpdateButtonStates = window.updateButtonStates;
-  window.updateButtonStates = function(){
-    originalUpdateButtonStates();
-    if(sessionStorage.getItem('isAdmin')==='true'){
-      document.querySelectorAll(".btn").forEach(btn=>{
-        if(["adminBtn","resetBtn","logoutBtn"].includes(btn.id)) return;
-        btn.disabled=false;
-        btn.style.opacity="1";
-        btn.title="";
-      });
-      const statusBanner=document.getElementById('statusBanner');
-      statusBanner.style.background="rgba(16,185,129,0.15)";
-      statusBanner.style.color="#10b981";
-      statusBanner.textContent="🟢 Admin: Luôn được phép đăng ký";
-    }
-  };
+    const historyBtn = document.createElement("button");
+    historyBtn.textContent = "📜 Xem lịch sử Admin";
+    historyBtn.className = "btn";
+    historyBtn.style.background = "#2563eb";
+    historyBtn.style.display = "none";
+    historyBtn.style.marginLeft = "8px";
+    document.querySelector(".admin-panel").appendChild(historyBtn);
 
-  function enableAdminDeleteAll(){
-    document.querySelectorAll('.list').forEach(listEl=>{
-      listEl.childNodes.forEach(personEl=>{
-        const delBtnExists=personEl.querySelector('.delete-btn');
-        if(delBtnExists) return;
-        const nameDiv=personEl.querySelector('div:nth-child(2)');
-        if(!nameDiv) return;
-        const name=nameDiv.textContent;
-        const del=document.createElement('span');
-        del.className='delete-btn';
-        del.textContent='❌';
-        del.onclick=()=>{
-          if(!confirm(`Bạn có chắc muốn xóa "${name}" khỏi ca này?`)) return;
-          const shiftId=listEl.id.replace('list_','');
-          const ref=firebase.database().ref('shifts/'+shiftId);
-          ref.transaction(current=>current?current.filter(n=>n!==name):[]);
-        };
-        personEl.appendChild(del);
+    const modal = document.createElement("div");
+    modal.style.position = "fixed";
+    modal.style.top = "0";
+    modal.style.left = "0";
+    modal.style.width = "100%";
+    modal.style.height = "100%";
+    modal.style.background = "rgba(0,0,0,0.6)";
+    modal.style.display = "none";
+    modal.style.alignItems = "center";
+    modal.style.justifyContent = "center";
+    modal.style.zIndex = "9999";
+
+    modal.innerHTML = `
+      <div style="background:#0b1220;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;max-width:420px;width:90%;color:white;max-height:80vh;overflow:auto;">
+        <h2 style="margin-top:0;text-align:center">📜 Lịch sử đăng nhập Admin</h2>
+        <div id="adminLogs" style="font-size:14px;line-height:1.6;margin-top:10px"></div>
+        <div style="text-align:center;margin-top:15px;">
+          <button id="closeModal" class="btn" style="background:#374151;width:auto;">Đóng</button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+
+    logsRef.on("value", snap => {
+      const data = snap.val();
+      const logDiv = document.getElementById("adminLogs");
+      if (!logDiv) return;
+      logDiv.innerHTML = "";
+      if (!data) {
+        logDiv.innerHTML = "<p>Chưa có ai đăng nhập admin.</p>";
+        return;
+      }
+      const entries = Object.values(data).reverse();
+      entries.forEach((log, i) => {
+        const div = document.createElement("div");
+        div.style.borderBottom = "1px solid rgba(255,255,255,0.05)";
+        div.style.padding = "6px 0";
+        div.innerHTML = `<b>${i + 1}.</b> ${log.email}<br><span style="color:#9ca3af">${log.time}</span>`;
+        logDiv.appendChild(div);
       });
     });
-  }
 
-  const originalSetAdminMode = window.setAdminMode;
-  window.setAdminMode = function(on){
-    originalSetAdminMode(on);
-    if(on){
-      updateButtonStates();
-      setTimeout(enableAdminDeleteAll,800);
-    }
-  };
+    modal.querySelector("#closeModal").onclick = () => { modal.style.display = "none"; };
+    historyBtn.onclick = () => { modal.style.display = "flex"; };
 
-  if(sessionStorage.getItem('isAdmin')==='true'){
-    updateButtonStates();
-    setTimeout(enableAdminDeleteAll,1000);
-  }
-})();
+    const originalSetAdminMode = setAdminMode;
+    setAdminMode = function (on) {
+      originalSetAdminMode(on);
+      if (on) historyBtn.style.display = "inline-block";
+      else { historyBtn.style.display = "none"; modal.style.display = "none"; }
+    };
+  })();
 </script>
-
 </body>
 </html>
