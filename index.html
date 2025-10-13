@@ -307,6 +307,88 @@
 })();
 </script>
 
+<!-- === NÚT MỞ ĐĂNG KÝ NGOÀI GIỜ + LỊCH SỬ ADMIN === -->
+<script>
+(function () {
+  let manualOpen = false;
+
+  const toggleBtn = document.createElement("button");
+  toggleBtn.textContent = "🔓 Mở đăng ký ngoài giờ (Admin)";
+  toggleBtn.className = "btn";
+  toggleBtn.style.background = "#10b981";
+  toggleBtn.style.display = "none";
+  toggleBtn.style.marginLeft = "8px";
+  document.querySelector(".admin-panel").appendChild(toggleBtn);
+
+  toggleBtn.onclick = () => {
+    manualOpen = !manualOpen;
+    toggleBtn.textContent = manualOpen
+      ? "🔒 Đóng đăng ký ngoài giờ"
+      : "🔓 Mở đăng ký ngoài giờ (Admin)";
+    updateButtonStates();
+  };
+
+  const historyBtn = document.createElement("button");
+  historyBtn.textContent = "📜 Xem lịch sử đăng nhập Admin";
+  historyBtn.className = "btn";
+  historyBtn.style.background = "#3b82f6";
+  historyBtn.style.display = "none";
+  historyBtn.style.marginLeft = "8px";
+  document.querySelector(".admin-panel").appendChild(historyBtn);
+
+  const adminLogRef = db.ref("admin_logs");
+  const logAdminLogin = () => {
+    const now = new Date().toLocaleString("vi-VN");
+    adminLogRef.push({ time: now, user: "Admin đăng nhập" });
+  };
+
+  window.addEventListener("storage", () => {
+    if (sessionStorage.getItem("isAdmin")) {
+      toggleBtn.style.display = "inline-block";
+      historyBtn.style.display = "inline-block";
+      logAdminLogin();
+    } else {
+      toggleBtn.style.display = "none";
+      historyBtn.style.display = "none";
+    }
+  });
+
+  if (sessionStorage.getItem("isAdmin")) {
+    toggleBtn.style.display = "inline-block";
+    historyBtn.style.display = "inline-block";
+  }
+
+  historyBtn.onclick = () => {
+    adminLogRef.once("value").then(snap => {
+      const logs = snap.val();
+      if (!logs) return alert("Chưa có lịch sử đăng nhập nào.");
+      let text = "📜 Lịch sử đăng nhập Admin:\n\n";
+      Object.values(logs).forEach(l => text += `• ${l.time} — ${l.user}\n`);
+      alert(text);
+    });
+  };
+
+  const originalUpdate = updateButtonStates;
+  updateButtonStates = function () {
+    const isOpen = isRegistrationOpen() || sessionStorage.getItem("isAdmin") || manualOpen;
+    const buttons = document.querySelectorAll(".btn");
+    buttons.forEach(btn => {
+      if (["adminBtn","resetBtn","logoutBtn"].includes(btn.id)) return;
+      btn.disabled = !isOpen;
+      btn.style.opacity = isOpen ? "1" : "0.45";
+      btn.title = isOpen ? "" : "Ngoài giờ đăng ký";
+    });
+    if (isOpen) {
+      statusBanner.style.background = "rgba(16,185,129,0.15)";
+      statusBanner.style.color = "#10b981";
+      statusBanner.textContent = "🟢 Đang trong thời gian đăng ký";
+    } else {
+      statusBanner.style.background = "rgba(239,68,68,0.15)";
+      statusBanner.style.color = "#ef4444";
+      statusBanner.textContent = "🔒 Ngoài giờ đăng ký (sẽ mở 19:50 Thứ 6)";
+    }
+  };
+})();
+</script>
 </body>
 </html>
-
