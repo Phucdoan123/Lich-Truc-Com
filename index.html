@@ -31,7 +31,7 @@
   .btn[disabled]{opacity:.45;cursor:not-allowed}
   .delete-btn{color:var(--danger);cursor:pointer;font-weight:bold;margin-left:8px}
   footer{margin-top:14px;color:var(--muted);font-size:13px}
-  .admin-panel{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .admin-panel{display:flex;gap:8px;align-items:center}
   .small{font-size:13px;color:var(--muted)}
   #statusBanner{padding:10px;text-align:center;border-radius:8px;margin-bottom:10px;font-weight:600}
   [title]{position:relative}
@@ -64,7 +64,8 @@
     <div class="admin-panel">
       <button id="adminBtn" class="btn" style="background:transparent;border:1px solid rgba(255,255,255,0.06);padding:6px 10px">Đăng nhập Admin</button>
       <button id="resetBtn" class="btn" style="background:var(--danger);display:none">🔄 Reset Tuần (Admin)</button>
-      <button id="toggleOpenBtn" class="btn" style="background:#10b981;display:none">🟢 Bật đăng ký thủ công</button>
+      <!-- ✅ nút mới để mở ngoài giờ -->
+      <button id="toggleOpenBtn" class="btn" style="background:#10b981;display:none">🟢 Mở đăng ký ngoài giờ</button>
       <button id="logoutBtn" class="btn" style="background:#374151;display:none">🚪 Đăng xuất</button>
     </div>
   </div>
@@ -92,6 +93,8 @@
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
   const shiftsRef = db.ref('shifts');
+  const manualOpenRef = db.ref('manualOpen'); // ✅ thêm node để lưu trạng thái mở thủ công
+  let manualOpen = false;
 
   const days = [
     { label: "Thứ 2", key: "thu2" },
@@ -110,9 +113,8 @@
   const resetBtn = document.getElementById('resetBtn');
   const adminBtn = document.getElementById('adminBtn');
   const logoutBtn = document.getElementById('logoutBtn');
-  const statusBanner = document.getElementById('statusBanner');
   const toggleOpenBtn = document.getElementById('toggleOpenBtn');
-  let manualOpen = false;
+  const statusBanner = document.getElementById('statusBanner');
 
   function buildGrid() {
     board.innerHTML = '';
@@ -174,8 +176,8 @@
   }
 
   function onRegister(shiftId) {
-    if (!isRegistrationOpen() && !manualOpen && !sessionStorage.getItem('isAdmin')) {
-      alert("🔒 Ngoài giờ đăng ký (chỉ mở 19:50 Thứ 6 → 21:00 Thứ 7)");
+    if (!isRegistrationOpen() && !sessionStorage.getItem('isAdmin')) {
+      alert("🔒 Ngoài giờ đăng ký (chỉ mở 19:50 Thứ 6 → 21:00 Thứ 7 hoặc admin mở thủ công)");
       return;
     }
 
@@ -208,18 +210,15 @@
     if (on) {
       resetBtn.style.display = 'inline-block';
       logoutBtn.style.display = 'inline-block';
-      toggleOpenBtn.style.display = 'inline-block';
       adminBtn.style.display = 'none';
+      toggleOpenBtn.style.display = 'inline-block'; // ✅ hiển thị nút mở ngoài giờ
       sessionStorage.setItem('isAdmin', 'true');
     } else {
       resetBtn.style.display = 'none';
       logoutBtn.style.display = 'none';
-      toggleOpenBtn.style.display = 'none';
       adminBtn.style.display = 'inline-block';
+      toggleOpenBtn.style.display = 'none';
       sessionStorage.removeItem('isAdmin');
-      manualOpen = false;
-      toggleOpenBtn.textContent = "🟢 Bật đăng ký thủ công";
-      toggleOpenBtn.style.background = "#10b981";
     }
   }
 
@@ -231,14 +230,6 @@
     } else alert('❌ Sai mật khẩu');
   };
   logoutBtn.onclick = () => { alert('🚪 Đã đăng xuất'); setAdminMode(false); };
-
-  toggleOpenBtn.onclick = () => {
-    manualOpen = !manualOpen;
-    toggleOpenBtn.textContent = manualOpen ? "🔴 Tắt mở đăng ký thủ công" : "🟢 Bật đăng ký thủ công";
-    toggleOpenBtn.style.background = manualOpen ? "#ef4444" : "#10b981";
-    updateButtonStates();
-  };
-
   resetBtn.onclick = () => {
     if (!confirm('Reset toàn bộ lịch tuần?')) return;
     const updates = {};
@@ -250,7 +241,24 @@
   };
   if (sessionStorage.getItem('isAdmin') === 'true') setAdminMode(true);
 
+  // ✅ xử lý nút bật/tắt mở ngoài giờ
+  toggleOpenBtn.onclick = () => {
+    manualOpen = !manualOpen;
+    manualOpenRef.set(manualOpen);
+    toggleOpenBtn.textContent = manualOpen ? "🔴 Tắt mở ngoài giờ" : "🟢 Mở đăng ký ngoài giờ";
+    toggleOpenBtn.style.background = manualOpen ? "#ef4444" : "#10b981";
+    alert(manualOpen ? "✅ Đã bật đăng ký ngoài giờ cho mọi người" : "🔒 Đã tắt đăng ký ngoài giờ");
+    updateButtonStates();
+  };
+
+  // ✅ cập nhật realtime khi admin bật/tắt
+  manualOpenRef.on('value', snap => {
+    manualOpen = !!snap.val();
+    updateButtonStates();
+  });
+
   function isRegistrationOpen() {
+    if (manualOpen) return true; // ✅ admin mở thủ công
     const now = new Date();
     const day = now.getDay();
     const hour = now.getHours();
@@ -260,7 +268,7 @@
   }
 
   function updateButtonStates() {
-    const isOpen = isRegistrationOpen() || manualOpen || sessionStorage.getItem('isAdmin');
+    const isOpen = isRegistrationOpen() || sessionStorage.getItem('isAdmin');
     const buttons = document.querySelectorAll(".btn");
     buttons.forEach(btn => {
       if (["adminBtn","resetBtn","logoutBtn","toggleOpenBtn"].includes(btn.id)) return;
@@ -271,7 +279,7 @@
     if (isOpen) {
       statusBanner.style.background = "rgba(16,185,129,0.15)";
       statusBanner.style.color = "#10b981";
-      statusBanner.textContent = "🟢 Đang trong thời gian đăng ký";
+      statusBanner.textContent = manualOpen ? "🟢 Đăng ký đang mở (Admin bật thủ công)" : "🟢 Đang trong thời gian đăng ký";
     } else {
       statusBanner.style.background = "rgba(239,68,68,0.15)";
       statusBanner.style.color = "#ef4444";
@@ -280,107 +288,6 @@
   }
   updateButtonStates();
   setInterval(updateButtonStates, 60000);
-
-  /* === GHI LỊCH SỬ ĐĂNG NHẬP ADMIN (EMAIL + IP + THIẾT BỊ, CHỈ ADMIN XEM) === */
-  (function () {
-    const logsRef = db.ref("admin_logins");
-
-    async function getIP() {
-      try {
-        const res = await fetch("https://api.ipify.org?format=json");
-        const data = await res.json();
-        return data.ip;
-      } catch {
-        return "unknown";
-      }
-    }
-
-    function getDeviceType() {
-      const ua = navigator.userAgent;
-      if (/mobile/i.test(ua)) return "📱 Mobile";
-      if (/tablet/i.test(ua)) return "📱 Tablet";
-      return "💻 Desktop";
-    }
-
-    const originalAdminClick = adminBtn.onclick;
-    adminBtn.onclick = async () => {
-      const pass = prompt("Nhập mật khẩu Admin:");
-      if (pass === ADMIN_PASSWORD) {
-        alert("✅ Đã đăng nhập Admin");
-        setAdminMode(true);
-
-        const email = "admin@anbinh.system";
-        const ip = await getIP();
-        const device = getDeviceType();
-        const time = new Date().toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" });
-        logsRef.push({ email, ip, device, time });
-      } else {
-        alert("❌ Sai mật khẩu");
-      }
-    };
-
-    const historyBtn = document.createElement("button");
-    historyBtn.textContent = "📜 Xem lịch sử Admin";
-    historyBtn.className = "btn";
-    historyBtn.style.background = "#2563eb";
-    historyBtn.style.display = "none";
-    historyBtn.style.marginLeft = "8px";
-    document.querySelector(".admin-panel").appendChild(historyBtn);
-
-    const modal = document.createElement("div");
-    modal.style.position = "fixed";
-    modal.style.top = "0";
-    modal.style.left = "0";
-    modal.style.width = "100%";
-    modal.style.height = "100%";
-    modal.style.background = "rgba(0,0,0,0.6)";
-    modal.style.display = "none";
-    modal.style.alignItems = "center";
-    modal.style.justifyContent = "center";
-    modal.style.zIndex = "9999";
-
-    modal.innerHTML = `
-      <div style="background:#0b1220;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;max-width:420px;width:90%;color:white;max-height:80vh;overflow:auto;">
-        <h2 style="margin-top:0;text-align:center">📜 Lịch sử đăng nhập Admin</h2>
-        <div id="adminLogs" style="font-size:14px;line-height:1.6;margin-top:10px"></div>
-        <div style="text-align:center;margin-top:15px;">
-          <button id="closeModal" class="btn" style="background:#374151;width:auto;">Đóng</button>
-        </div>
-      </div>`;
-    document.body.appendChild(modal);
-
-    logsRef.on("value", snap => {
-      const data = snap.val();
-      const logDiv = document.getElementById("adminLogs");
-      if (!logDiv) return;
-      logDiv.innerHTML = "";
-      if (!data) {
-        logDiv.innerHTML = "<p>Chưa có ai đăng nhập admin.</p>";
-        return;
-      }
-      const entries = Object.values(data).reverse();
-      entries.forEach((log, i) => {
-        const div = document.createElement("div");
-        div.style.borderBottom = "1px solid rgba(255,255,255,0.05)";
-        div.style.padding = "6px 0";
-        div.innerHTML = `
-          <b>${i + 1}.</b> ${log.email}<br>
-          🕒 <span style="color:#9ca3af">${log.time}</span><br>
-          🌐 IP: ${log.ip} &nbsp;&nbsp; 💻 ${log.device}
-        `;
-        logDiv.appendChild(div);
-      });
-    });
-
-    historyBtn.onclick = () => (modal.style.display = "flex");
-    modal.querySelector("#closeModal").onclick = () => (modal.style.display = "none");
-
-    function toggleHistoryBtn() {
-      historyBtn.style.display = sessionStorage.getItem("isAdmin") ? "inline-block" : "none";
-    }
-    toggleHistoryBtn();
-    window.addEventListener("storage", toggleHistoryBtn);
-  })();
 </script>
 </body>
 </html>
