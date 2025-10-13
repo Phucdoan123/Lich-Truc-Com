@@ -31,7 +31,7 @@
   .btn[disabled]{opacity:.45;cursor:not-allowed}
   .delete-btn{color:var(--danger);cursor:pointer;font-weight:bold;margin-left:8px}
   footer{margin-top:14px;color:var(--muted);font-size:13px}
-  .admin-panel{display:flex;gap:8px;align-items:center}
+  .admin-panel{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
   .small{font-size:13px;color:var(--muted)}
   #statusBanner{padding:10px;text-align:center;border-radius:8px;margin-bottom:10px;font-weight:600}
   [title]{position:relative}
@@ -64,8 +64,6 @@
     <div class="admin-panel">
       <button id="adminBtn" class="btn" style="background:transparent;border:1px solid rgba(255,255,255,0.06);padding:6px 10px">Đăng nhập Admin</button>
       <button id="resetBtn" class="btn" style="background:var(--danger);display:none">🔄 Reset Tuần (Admin)</button>
-      <!-- ✅ nút mới để mở ngoài giờ -->
-      <button id="toggleOpenBtn" class="btn" style="background:#10b981;display:none">🟢 Mở đăng ký ngoài giờ</button>
       <button id="logoutBtn" class="btn" style="background:#374151;display:none">🚪 Đăng xuất</button>
     </div>
   </div>
@@ -93,8 +91,6 @@
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
   const shiftsRef = db.ref('shifts');
-  const manualOpenRef = db.ref('manualOpen'); // ✅ thêm node để lưu trạng thái mở thủ công
-  let manualOpen = false;
 
   const days = [
     { label: "Thứ 2", key: "thu2" },
@@ -113,7 +109,6 @@
   const resetBtn = document.getElementById('resetBtn');
   const adminBtn = document.getElementById('adminBtn');
   const logoutBtn = document.getElementById('logoutBtn');
-  const toggleOpenBtn = document.getElementById('toggleOpenBtn');
   const statusBanner = document.getElementById('statusBanner');
 
   function buildGrid() {
@@ -177,7 +172,7 @@
 
   function onRegister(shiftId) {
     if (!isRegistrationOpen() && !sessionStorage.getItem('isAdmin')) {
-      alert("🔒 Ngoài giờ đăng ký (chỉ mở 19:50 Thứ 6 → 21:00 Thứ 7 hoặc admin mở thủ công)");
+      alert("🔒 Ngoài giờ đăng ký (chỉ mở 19:50 Thứ 6 → 21:00 Thứ 7)");
       return;
     }
 
@@ -211,17 +206,14 @@
       resetBtn.style.display = 'inline-block';
       logoutBtn.style.display = 'inline-block';
       adminBtn.style.display = 'none';
-      toggleOpenBtn.style.display = 'inline-block'; // ✅ hiển thị nút mở ngoài giờ
       sessionStorage.setItem('isAdmin', 'true');
     } else {
       resetBtn.style.display = 'none';
       logoutBtn.style.display = 'none';
       adminBtn.style.display = 'inline-block';
-      toggleOpenBtn.style.display = 'none';
       sessionStorage.removeItem('isAdmin');
     }
   }
-
   adminBtn.onclick = () => {
     const pass = prompt('Nhập mật khẩu Admin:');
     if (pass === ADMIN_PASSWORD) {
@@ -241,24 +233,7 @@
   };
   if (sessionStorage.getItem('isAdmin') === 'true') setAdminMode(true);
 
-  // ✅ xử lý nút bật/tắt mở ngoài giờ
-  toggleOpenBtn.onclick = () => {
-    manualOpen = !manualOpen;
-    manualOpenRef.set(manualOpen);
-    toggleOpenBtn.textContent = manualOpen ? "🔴 Tắt mở ngoài giờ" : "🟢 Mở đăng ký ngoài giờ";
-    toggleOpenBtn.style.background = manualOpen ? "#ef4444" : "#10b981";
-    alert(manualOpen ? "✅ Đã bật đăng ký ngoài giờ cho mọi người" : "🔒 Đã tắt đăng ký ngoài giờ");
-    updateButtonStates();
-  };
-
-  // ✅ cập nhật realtime khi admin bật/tắt
-  manualOpenRef.on('value', snap => {
-    manualOpen = !!snap.val();
-    updateButtonStates();
-  });
-
   function isRegistrationOpen() {
-    if (manualOpen) return true; // ✅ admin mở thủ công
     const now = new Date();
     const day = now.getDay();
     const hour = now.getHours();
@@ -271,7 +246,7 @@
     const isOpen = isRegistrationOpen() || sessionStorage.getItem('isAdmin');
     const buttons = document.querySelectorAll(".btn");
     buttons.forEach(btn => {
-      if (["adminBtn","resetBtn","logoutBtn","toggleOpenBtn"].includes(btn.id)) return;
+      if (["adminBtn","resetBtn","logoutBtn"].includes(btn.id)) return;
       btn.disabled = !isOpen;
       btn.style.opacity = isOpen ? "1" : "0.45";
       btn.title = isOpen ? "" : "Ngoài giờ đăng ký";
@@ -279,7 +254,7 @@
     if (isOpen) {
       statusBanner.style.background = "rgba(16,185,129,0.15)";
       statusBanner.style.color = "#10b981";
-      statusBanner.textContent = manualOpen ? "🟢 Đăng ký đang mở (Admin bật thủ công)" : "🟢 Đang trong thời gian đăng ký";
+      statusBanner.textContent = "🟢 Đang trong thời gian đăng ký";
     } else {
       statusBanner.style.background = "rgba(239,68,68,0.15)";
       statusBanner.style.color = "#ef4444";
@@ -289,5 +264,48 @@
   updateButtonStates();
   setInterval(updateButtonStates, 60000);
 </script>
+
+<!-- === NÚT RESET BIỆT DANH MỘT LẦN CHO ADMIN === -->
+<script>
+(function () {
+  const resetNickRef = db.ref("reset_nickname_once");
+
+  const resetNickBtn = document.createElement("button");
+  resetNickBtn.textContent = "🧹 Reset biệt danh (1 lần)";
+  resetNickBtn.className = "btn";
+  resetNickBtn.style.background = "#f59e0b";
+  resetNickBtn.style.display = "none";
+  resetNickBtn.style.marginLeft = "8px";
+  document.querySelector(".admin-panel").appendChild(resetNickBtn);
+
+  resetNickRef.once("value").then(snap => {
+    const used = snap.val();
+    if (!used && sessionStorage.getItem("isAdmin")) {
+      resetNickBtn.style.display = "inline-block";
+    }
+  });
+
+  resetNickBtn.onclick = () => {
+    if (!confirm("Bạn có chắc muốn xóa toàn bộ tên khỏi tất cả ca trực? (Chỉ làm được 1 lần)")) return;
+
+    const updates = {};
+    days.forEach(day => {
+      const slots = (day.key === "cn") ? slotsCN : slotsDefault;
+      slots.forEach(s => updates[`${day.key}_${s.id}`] = []);
+    });
+
+    shiftsRef.set(updates).then(() => {
+      alert("✅ Đã xóa toàn bộ tên khỏi tất cả ca.");
+      resetNickRef.set(true);
+      resetNickBtn.style.display = "none";
+    });
+  };
+
+  window.addEventListener("storage", () => {
+    if (!sessionStorage.getItem("isAdmin")) resetNickBtn.style.display = "none";
+  });
+})();
+</script>
+
 </body>
 </html>
