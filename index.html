@@ -31,7 +31,7 @@
   .btn[disabled]{opacity:.45;cursor:not-allowed}
   .delete-btn{color:var(--danger);cursor:pointer;font-weight:bold;margin-left:8px}
   footer{margin-top:14px;color:var(--muted);font-size:13px}
-  .admin-panel{display:flex;gap:8px;align-items:center}
+  .admin-panel{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
   .small{font-size:13px;color:var(--muted)}
   #statusBanner{padding:10px;text-align:center;border-radius:8px;margin-bottom:10px;font-weight:600}
   [title]{position:relative}
@@ -64,7 +64,6 @@
     <div class="admin-panel">
       <button id="adminBtn" class="btn" style="background:transparent;border:1px solid rgba(255,255,255,0.06);padding:6px 10px">Đăng nhập Admin</button>
       <button id="resetBtn" class="btn" style="background:var(--danger);display:none">🔄 Reset Tuần (Admin)</button>
-      <!-- ✅ nút mới để mở ngoài giờ -->
       <button id="toggleOpenBtn" class="btn" style="background:#10b981;display:none">🟢 Mở đăng ký ngoài giờ</button>
       <button id="logoutBtn" class="btn" style="background:#374151;display:none">🚪 Đăng xuất</button>
     </div>
@@ -93,7 +92,8 @@
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
   const shiftsRef = db.ref('shifts');
-  const manualOpenRef = db.ref('manualOpen'); // ✅ thêm node để lưu trạng thái mở thủ công
+  const manualOpenRef = db.ref('manualOpen');
+  const blacklistRef = db.ref('nameBlacklist'); // ✅ thêm node danh sách tên cần xoá
   let manualOpen = false;
 
   const days = [
@@ -115,6 +115,21 @@
   const logoutBtn = document.getElementById('logoutBtn');
   const toggleOpenBtn = document.getElementById('toggleOpenBtn');
   const statusBanner = document.getElementById('statusBanner');
+
+  // ✅ Nút xóa tên máy khách (Admin)
+  const clearNameBtn = document.createElement('button');
+  clearNameBtn.className = 'btn';
+  clearNameBtn.style.background = '#f59e0b';
+  clearNameBtn.style.display = 'none';
+  clearNameBtn.textContent = '🧹 Xóa tên máy khách';
+  document.querySelector('.admin-panel').appendChild(clearNameBtn);
+
+  clearNameBtn.onclick = () => {
+    const nameToRemove = prompt('Nhập tên cần xóa trên máy khách:');
+    if (!nameToRemove) return;
+    blacklistRef.child(nameToRemove).set(true);
+    alert(`✅ Đã thêm "${nameToRemove}" vào danh sách xoá`);
+  };
 
   function buildGrid() {
     board.innerHTML = '';
@@ -211,13 +226,15 @@
       resetBtn.style.display = 'inline-block';
       logoutBtn.style.display = 'inline-block';
       adminBtn.style.display = 'none';
-      toggleOpenBtn.style.display = 'inline-block'; // ✅ hiển thị nút mở ngoài giờ
+      toggleOpenBtn.style.display = 'inline-block';
+      clearNameBtn.style.display = 'inline-block'; // ✅ hiện nút xoá tên
       sessionStorage.setItem('isAdmin', 'true');
     } else {
       resetBtn.style.display = 'none';
       logoutBtn.style.display = 'none';
       adminBtn.style.display = 'inline-block';
       toggleOpenBtn.style.display = 'none';
+      clearNameBtn.style.display = 'none'; // ✅ ẩn khi thoát
       sessionStorage.removeItem('isAdmin');
     }
   }
@@ -257,8 +274,18 @@
     updateButtonStates();
   });
 
+  // ✅ kiểm tra danh sách tên bị xoá để xóa khỏi localStorage
+  blacklistRef.on('value', snap => {
+    const list = snap.val() || {};
+    const myName = localStorage.getItem('myName');
+    if (myName && list[myName]) {
+      alert('⚠️ Tên cũ của bạn đã bị admin xoá, vui lòng nhập lại tên mới.');
+      localStorage.removeItem('myName');
+    }
+  });
+
   function isRegistrationOpen() {
-    if (manualOpen) return true; // ✅ admin mở thủ công
+    if (manualOpen) return true;
     const now = new Date();
     const day = now.getDay();
     const hour = now.getHours();
@@ -271,7 +298,8 @@
     const isOpen = isRegistrationOpen() || sessionStorage.getItem('isAdmin');
     const buttons = document.querySelectorAll(".btn");
     buttons.forEach(btn => {
-      if (["adminBtn","resetBtn","logoutBtn","toggleOpenBtn"].includes(btn.id)) return;
+      if (["adminBtn","resetBtn","logoutBtn","toggleOpenBtn",""].includes(btn.id)) return;
+      if (btn === clearNameBtn) return;
       btn.disabled = !isOpen;
       btn.style.opacity = isOpen ? "1" : "0.45";
       btn.title = isOpen ? "" : "Ngoài giờ đăng ký";
