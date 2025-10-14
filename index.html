@@ -93,7 +93,7 @@
   const db = firebase.database();
   const shiftsRef = db.ref('shifts');
   const manualOpenRef = db.ref('manualOpen');
-  const blacklistRef = db.ref('nameBlacklist'); // ✅ thêm node danh sách tên cần xoá
+  const blacklistRef = db.ref('nameBlacklist');
   let manualOpen = false;
 
   const days = [
@@ -116,7 +116,6 @@
   const toggleOpenBtn = document.getElementById('toggleOpenBtn');
   const statusBanner = document.getElementById('statusBanner');
 
-  // ✅ Nút xóa tên máy khách (Admin)
   const clearNameBtn = document.createElement('button');
   clearNameBtn.className = 'btn';
   clearNameBtn.style.background = '#f59e0b';
@@ -227,14 +226,14 @@
       logoutBtn.style.display = 'inline-block';
       adminBtn.style.display = 'none';
       toggleOpenBtn.style.display = 'inline-block';
-      clearNameBtn.style.display = 'inline-block'; // ✅ hiện nút xoá tên
+      clearNameBtn.style.display = 'inline-block';
       sessionStorage.setItem('isAdmin', 'true');
     } else {
       resetBtn.style.display = 'none';
       logoutBtn.style.display = 'none';
       adminBtn.style.display = 'inline-block';
       toggleOpenBtn.style.display = 'none';
-      clearNameBtn.style.display = 'none'; // ✅ ẩn khi thoát
+      clearNameBtn.style.display = 'none';
       sessionStorage.removeItem('isAdmin');
     }
   }
@@ -258,7 +257,6 @@
   };
   if (sessionStorage.getItem('isAdmin') === 'true') setAdminMode(true);
 
-  // ✅ xử lý nút bật/tắt mở ngoài giờ
   toggleOpenBtn.onclick = () => {
     manualOpen = !manualOpen;
     manualOpenRef.set(manualOpen);
@@ -268,13 +266,11 @@
     updateButtonStates();
   };
 
-  // ✅ cập nhật realtime khi admin bật/tắt
   manualOpenRef.on('value', snap => {
     manualOpen = !!snap.val();
     updateButtonStates();
   });
 
-  // ✅ kiểm tra danh sách tên bị xoá để xóa khỏi localStorage
   blacklistRef.on('value', snap => {
     const list = snap.val() || {};
     const myName = localStorage.getItem('myName');
@@ -317,5 +313,84 @@
   updateButtonStates();
   setInterval(updateButtonStates, 60000);
 </script>
+
+<!-- ✅ Ghi chú Admin realtime -->
+<div id="adminNoteToggle">📝</div>
+<div id="adminNoteBox" style="display:none">
+  <textarea id="adminNoteInput" placeholder="✏️ Nhập ghi chú cho mọi người..." style="display:none"></textarea>
+  <div id="adminNoteDisplay">📝 <span id="adminNoteText">Không có ghi chú nào</span></div>
+</div>
+
+<style>
+  #adminNoteToggle {
+    position: fixed;
+    bottom: 18px;
+    right: 18px;
+    width: 42px;
+    height: 42px;
+    background: linear-gradient(135deg, #6b46c1, #3b82f6);
+    color: white;
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 0 10px rgba(0,0,0,0.3);
+    z-index: 1100;
+    transition: transform 0.2s ease;
+  }
+  #adminNoteToggle:hover { transform: scale(1.1); }
+
+  #adminNoteBox {
+    position: fixed;
+    bottom: 70px;
+    right: 16px;
+    background: rgba(11,18,32,0.97);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 12px;
+    padding: 10px;
+    width: 270px;
+    z-index: 1100;
+    box-shadow: 0 0 10px rgba(0,0,0,0.2);
+  }
+  #adminNoteInput {
+    width: 100%;
+    height: 90px;
+    background: rgba(255,255,255,0.05);
+    border: none;
+    color: white;
+    padding: 6px;
+    border-radius: 8px;
+    resize: none;
+  }
+  #adminNoteDisplay { font-size: 14px; color: #d1d5db; }
+</style>
+
+<script>
+  const adminNoteRef = db.ref("adminNote");
+  const adminNoteToggle = document.getElementById("adminNoteToggle");
+  const adminNoteBox = document.getElementById("adminNoteBox");
+  const adminNoteInput = document.getElementById("adminNoteInput");
+  const adminNoteText = document.getElementById("adminNoteText");
+
+  let noteVisible = false;
+
+  adminNoteToggle.onclick = () => {
+    noteVisible = !noteVisible;
+    adminNoteBox.style.display = noteVisible ? "block" : "none";
+    adminNoteInput.style.display = sessionStorage.getItem("isAdmin") ? "block" : "none";
+  };
+
+  adminNoteRef.on("value", (snap) => {
+    adminNoteText.textContent = snap.val() || "Không có ghi chú nào";
+  });
+
+  adminNoteInput.addEventListener("change", () => {
+    if (!sessionStorage.getItem("isAdmin")) return;
+    adminNoteRef.set(adminNoteInput.value.trim());
+  });
+</script>
+
 </body>
 </html>
