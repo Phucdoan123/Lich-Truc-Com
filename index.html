@@ -30,7 +30,7 @@
   .btn{margin-top:8px;border:none;padding:8px 10px;border-radius:8px;background:var(--accent);color:white;cursor:pointer;width:100%;transition:opacity 0.3s ease}
   .btn[disabled]{opacity:.45;cursor:not-allowed}
   .delete-btn{color:var(--danger);cursor:pointer;font-weight:bold;margin-left:8px}
-  footer{margin-top:14px;color:var(--muted);font-size:13px}
+  footer{margin-top:14px;color:var(--muted);font-size:15px} /* tăng chữ ghi chú */
   .admin-panel{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
   .small{font-size:13px;color:var(--muted)}
   #statusBanner{padding:10px;text-align:center;border-radius:8px;margin-bottom:10px;font-weight:600}
@@ -51,6 +51,52 @@
   }
   @media(max-width:1100px){ .board{grid-template-columns:repeat(3, 1fr)} }
   @media(max-width:720px){ .board{grid-template-columns:repeat(1, 1fr)} header{flex-direction:column;align-items:flex-start} }
+
+  /* ===== Ghi chú Admin ===== */
+  #adminNoteToggle {
+    position: fixed;
+    bottom: 18px;
+    right: 18px;
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(135deg, #6b46c1, #3b82f6);
+    color: white;
+    font-size: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 0 10px rgba(0,0,0,0.3);
+    z-index: 1100;
+    transition: transform 0.2s ease;
+  }
+  #adminNoteToggle:hover { transform: scale(1.1); }
+
+  #adminNoteBox {
+    position: fixed;
+    bottom: 80px;
+    right: 16px;
+    background: rgba(11,18,32,0.97);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 12px;
+    padding: 12px;
+    width: 300px;
+    z-index: 1100;
+    box-shadow: 0 0 10px rgba(0,0,0,0.2);
+  }
+  #adminNoteInput {
+    width: 100%;
+    height: 120px;
+    background: rgba(255,255,255,0.05);
+    border: none;
+    color: white;
+    padding: 8px;
+    border-radius: 8px;
+    resize: none;
+    font-size: 14px;
+  }
+  #adminNoteDisplay { font-size: 15px; color: #d1d5db; }
 </style>
 </head>
 
@@ -79,6 +125,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 
 <script>
+  // ==== Giữ nguyên tất cả code Firebase, ca trực, admin, blacklist ====
+
   const firebaseConfig = {
     apiKey: "AIzaSyCZ8o7Z855RhsncCZlEt4zDe6ps-29RAq0",
     authDomain: "lich-truc-com.firebaseapp.com",
@@ -312,62 +360,8 @@
   }
   updateButtonStates();
   setInterval(updateButtonStates, 60000);
-</script>
 
-<!-- ✅ Ghi chú Admin realtime -->
-<div id="adminNoteToggle">📝</div>
-<div id="adminNoteBox" style="display:none">
-  <textarea id="adminNoteInput" placeholder="✏️ Nhập ghi chú cho mọi người..." style="display:none"></textarea>
-  <div id="adminNoteDisplay">📝 <span id="adminNoteText">Không có ghi chú nào</span></div>
-</div>
-
-<style>
-  #adminNoteToggle {
-    position: fixed;
-    bottom: 18px;
-    right: 18px;
-    width: 42px;
-    height: 42px;
-    background: linear-gradient(135deg, #6b46c1, #3b82f6);
-    color: white;
-    font-size: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    cursor: pointer;
-    box-shadow: 0 0 10px rgba(0,0,0,0.3);
-    z-index: 1100;
-    transition: transform 0.2s ease;
-  }
-  #adminNoteToggle:hover { transform: scale(1.1); }
-
-  #adminNoteBox {
-    position: fixed;
-    bottom: 70px;
-    right: 16px;
-    background: rgba(11,18,32,0.97);
-    border: 1px solid rgba(255,255,255,0.06);
-    border-radius: 12px;
-    padding: 10px;
-    width: 270px;
-    z-index: 1100;
-    box-shadow: 0 0 10px rgba(0,0,0,0.2);
-  }
-  #adminNoteInput {
-    width: 100%;
-    height: 90px;
-    background: rgba(255,255,255,0.05);
-    border: none;
-    color: white;
-    padding: 6px;
-    border-radius: 8px;
-    resize: none;
-  }
-  #adminNoteDisplay { font-size: 14px; color: #d1d5db; }
-</style>
-
-<script>
+  // ==== Ghi chú Admin realtime ====
   const adminNoteRef = db.ref("adminNote");
   const adminNoteToggle = document.getElementById("adminNoteToggle");
   const adminNoteBox = document.getElementById("adminNoteBox");
@@ -384,6 +378,7 @@
 
   adminNoteRef.on("value", (snap) => {
     adminNoteText.textContent = snap.val() || "Không có ghi chú nào";
+    adminNoteInput.value = snap.val() || "";
   });
 
   adminNoteInput.addEventListener("change", () => {
@@ -391,6 +386,13 @@
     adminNoteRef.set(adminNoteInput.value.trim());
   });
 </script>
+
+<!-- HTML cho ghi chú Admin -->
+<div id="adminNoteToggle">📝</div>
+<div id="adminNoteBox" style="display:none">
+  <textarea id="adminNoteInput" placeholder="✏️ Nhập ghi chú cho mọi người..."></textarea>
+  <div id="adminNoteDisplay">📝 <span id="adminNoteText">Không có ghi chú nào</span></div>
+</div>
 
 </body>
 </html>
