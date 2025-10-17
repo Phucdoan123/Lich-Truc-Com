@@ -198,7 +198,9 @@
 
     let name = localStorage.getItem('myName');
     if (!name) {
-      name = prompt('Nhập tên của bạn:').trim();
+      name = prompt('Nhập tên của bạn:');
+      if (!name) return;
+      name = name.trim();
       if (!name) return;
       localStorage.setItem('myName', name);
     }
@@ -229,7 +231,10 @@
       toggleOpenBtn.style.display = 'inline-block';
       clearNameBtn.style.display = 'inline-block';
       sessionStorage.setItem('isAdmin', 'true');
-      adminNoteInput.style.display = noteVisible ? "block" : "none"; // hiển thị input khi admin
+      // kiểm tra an toàn: adminNoteInput có thể được khai báo sau (trong thẻ script khác)
+      if (typeof adminNoteInput !== 'undefined') {
+        adminNoteInput.style.display = noteVisible ? "block" : "none";
+      }
     } else {
       resetBtn.style.display = 'none';
       logoutBtn.style.display = 'none';
@@ -237,7 +242,9 @@
       toggleOpenBtn.style.display = 'none';
       clearNameBtn.style.display = 'none';
       sessionStorage.removeItem('isAdmin');
-      adminNoteInput.style.display = "none";
+      if (typeof adminNoteInput !== 'undefined') {
+        adminNoteInput.style.display = "none";
+      }
     }
   }
 
@@ -321,7 +328,7 @@
 <div id="adminNoteToggle">📝</div>
 <div id="adminNoteBox">
   <textarea id="adminNoteInput" placeholder="✏️ Nhập ghi chú cho mọi người..."></textarea>
-  <div id="adminNoteDisplay">📝 <span id="adminNoteText">Không có ghi chú nào</span></div>
+  <div id="adminNoteDisplay">📝 <span id="adminNoteText" class="placeholder">Không có ghi chú nào</span></div>
 </div>
 
 <style>
@@ -341,6 +348,7 @@
     cursor: pointer;
     z-index: 1100;
   }
+  /* Tăng kích thước khung 1.5x so với ban đầu */
   #adminNoteBox {
     position: fixed;
     bottom: 70px;
@@ -348,27 +356,39 @@
     background: rgba(11,18,32,0.97);
     border: 1px solid rgba(255,255,255,0.06);
     border-radius: 12px;
-    padding: 10px;
-    width: 300px;
-    max-height: 200px;
+    padding: 15px; /* tăng padding */
+    width: 450px; /* từ 300px -> 450px */
+    max-height: 300px; /* từ 200px -> 300px */
     overflow-y: auto;
     display: none;
     z-index: 1100;
+    font-size: 1.05em;
   }
   #adminNoteInput {
     width: 100%;
-    min-height: 80px;
-    max-height: 150px;
+    min-height: 120px; /* tăng chiều cao */
+    max-height: 250px;
     background: rgba(255,255,255,0.05);
     border: none;
     color: white;
-    padding: 6px;
+    padding: 10px;
     border-radius: 8px;
     resize: vertical;
     margin-bottom: 8px;
     display: none;
   }
-  #adminNoteDisplay { font-size: 14px; color: #d1d5db; white-space: pre-wrap; }
+  #adminNoteDisplay { font-size: 15px; color: #d1d5db; white-space: pre-wrap; }
+  /* placeholder mờ */
+  #adminNoteText.placeholder {
+    opacity: 0.5;
+    font-style: italic;
+  }
+
+  /* responsive nhỏ màn hình: giữ hợp lý */
+  @media(max-width:480px){
+    #adminNoteBox { width: calc(100% - 32px); right: 16px; left: 16px; bottom: 80px; }
+    #adminNoteInput { min-height: 100px; }
+  }
 </style>
 
 <script>
@@ -381,22 +401,36 @@
   adminNoteToggle.onclick = () => {
     noteVisible = !noteVisible;
     adminNoteBox.style.display = noteVisible ? "block" : "none";
-    if (noteVisible && sessionStorage.getItem("isAdmin")) {
-      adminNoteInput.style.display = "block";
-    } else {
-      adminNoteInput.style.display = "none";
-    }
+    // chỉ hiện input nếu đang là admin
+    adminNoteInput.style.display = (noteVisible && sessionStorage.getItem("isAdmin")) ? "block" : "none";
   };
 
+  // Hiển thị ghi chú với placeholder mờ khi trống
   adminNoteRef.on("value", snap => {
-    const val = snap.val() || "Không có ghi chú nào";
-    adminNoteText.textContent = val;
-    adminNoteInput.value = val;
+    const val = snap.val() || "";
+    if (!val.trim()) {
+      adminNoteText.textContent = "Không có ghi chú nào";
+      adminNoteText.classList.add("placeholder");
+    } else {
+      adminNoteText.textContent = val;
+      adminNoteText.classList.remove("placeholder");
+    }
+    // Đồng bộ giá trị input (nếu có)
+    if (typeof adminNoteInput !== 'undefined') adminNoteInput.value = val;
   });
 
+  // Khi admin nhập → lưu realtime và cập nhật hiển thị
   adminNoteInput.addEventListener("input", () => {
     if (!sessionStorage.getItem("isAdmin")) return;
-    adminNoteRef.set(adminNoteInput.value.trim());
+    const text = adminNoteInput.value;
+    // Lưu chính xác giá trị (cho phép rỗng)
+    adminNoteRef.set(text.trim());
+    if (!text.trim()) {
+      adminNoteText.textContent = "Không có ghi chú nào";
+      adminNoteText.classList.add("placeholder");
+    } else {
+      adminNoteText.classList.remove("placeholder");
+    }
   });
 </script>
 
