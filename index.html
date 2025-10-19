@@ -127,7 +127,7 @@
   clearNameBtn.onclick = () => {
     const nameToRemove = prompt('Nhập tên cần xóa trên máy khách:');
     if (!nameToRemove) return;
-    blacklistRef.child(nameToRemove).set(true);
+    blacklistRef.child(nameToRemove.trim().toLowerCase()).set(true);
     alert(`✅ Đã thêm "${nameToRemove}" vào danh sách xoá`);
   };
 
@@ -152,6 +152,7 @@
     });
   }
   buildGrid();
+
   shiftsRef.on('value', snap => {
     const data = snap.val() || {};
     days.forEach(day => {
@@ -230,9 +231,6 @@
       toggleOpenBtn.style.display = 'inline-block';
       clearNameBtn.style.display = 'inline-block';
       sessionStorage.setItem('isAdmin', 'true');
-      if (typeof adminNoteInput !== 'undefined') {
-        adminNoteInput.style.display = noteVisible ? "block" : "none";
-      }
     } else {
       resetBtn.style.display = 'none';
       logoutBtn.style.display = 'none';
@@ -240,9 +238,6 @@
       toggleOpenBtn.style.display = 'none';
       clearNameBtn.style.display = 'none';
       sessionStorage.removeItem('isAdmin');
-      if (typeof adminNoteInput !== 'undefined') {
-        adminNoteInput.style.display = "none";
-      }
     }
   }
 
@@ -279,149 +274,81 @@
     updateButtonStates();
   });
 
+  // ✅ FIX blacklist: chuẩn hóa tên & bỏ qua admin
   blacklistRef.on('value', snap => {
-    const list = snap.val() || {};
-    const myName = localStorage.getItem('myName');
-    if (myName && list[myName]) {
+    const listObj = snap.val() || {};
+    const blacklistSet = new Set(Object.keys(listObj).map(k => k.trim().toLowerCase()));
+
+    const myNameRaw = localStorage.getItem('myName');
+    const myName = myNameRaw ? myNameRaw.trim().toLowerCase() : "";
+
+    if (sessionStorage.getItem('isAdmin') === 'true') {
+      if (myName && blacklistSet.has(myName)) {
+        console.warn(`(blacklist) admin "${myNameRaw}" có trong blacklist (bỏ qua cảnh báo)`);
+      }
+      return;
+    }
+
+    if (myName && blacklistSet.has(myName)) {
       alert('⚠️ Tên cũ của bạn đã bị admin xoá, vui lòng nhập lại tên mới.');
       localStorage.removeItem('myName');
+    }
+  });
+  adminNoteRef.on('value', snap => {
+    const note = snap.val() || "";
+    if (note) {
+      let noteBox = document.getElementById("adminNoteBox");
+      if (!noteBox) {
+        noteBox = document.createElement("div");
+        noteBox.id = "adminNoteBox";
+        noteBox.style.cssText = `
+          background:rgba(255,255,255,0.05);
+          border-left:4px solid var(--accent2);
+          padding:10px;
+          border-radius:8px;
+          margin-top:14px;
+          font-size:14px;
+          color:var(--text);
+        `;
+        document.body.appendChild(noteBox);
+      }
+      noteBox.innerHTML = `<b>📝 Ghi chú Admin:</b> ${note}`;
     }
   });
 
   function isRegistrationOpen() {
     if (manualOpen) return true;
     const now = new Date();
-    const day = now.getDay();
-    const hour = now.getHours();
-    const minute = now.getMinutes();
-    return (day === 5 && (hour > 19 || (hour === 19 && minute >= 50))) ||
-           (day === 6 && (hour < 21 || (hour === 21 && minute === 0)));
+    const d = now.getDay();
+    const h = now.getHours();
+    const m = now.getMinutes();
+    if (d === 5 && (h > 19 || (h === 19 && m >= 50))) return true;
+    if (d === 6 && (h < 21 || (h === 21 && m <= 0))) return true;
+    return false;
   }
 
   function updateButtonStates() {
-    const isOpen = isRegistrationOpen() || sessionStorage.getItem('isAdmin');
-    const buttons = document.querySelectorAll(".btn");
-    buttons.forEach(btn => {
-      if (["adminBtn","resetBtn","logoutBtn","toggleOpenBtn",""].includes(btn.id)) return;
-      if (btn === clearNameBtn) return;
-      btn.disabled = !isOpen;
-      btn.style.opacity = isOpen ? "1" : "0.45";
-      btn.title = isOpen ? "" : "Ngoài giờ đăng ký";
-    });
-    if (isOpen) {
+    const open = isRegistrationOpen();
+    const isAdmin = sessionStorage.getItem('isAdmin') === 'true';
+    if (open) {
+      statusBanner.textContent = "🟢 Đang trong giờ đăng ký!";
       statusBanner.style.background = "rgba(16,185,129,0.15)";
       statusBanner.style.color = "#10b981";
-      statusBanner.textContent = manualOpen ? "🟢 Đăng ký đang mở (Admin bật thủ công)" : "🟢 Đang trong thời gian đăng ký";
     } else {
-      statusBanner.style.background = "rgba(239,68,68,0.15)";
-      statusBanner.style.color = "#ef4444";
-      statusBanner.textContent = "🔒 Ngoài giờ đăng ký (sẽ mở 19:50 Thứ 6)";
+      statusBanner.textContent = manualOpen ? "🟢 Đăng ký ngoài giờ (Admin bật)" : "🔒 Ngoài giờ đăng ký (Thứ 6 19:50 → Thứ 7 21:00)";
+      statusBanner.style.background = manualOpen ? "rgba(16,185,129,0.1)" : "rgba(239,68,68,0.1)";
+      statusBanner.style.color = manualOpen ? "#10b981" : "#ef4444";
     }
+    toggleOpenBtn.textContent = manualOpen ? "🔴 Tắt mở ngoài giờ" : "🟢 Mở đăng ký ngoài giờ";
+    toggleOpenBtn.style.background = manualOpen ? "#ef4444" : "#10b981";
+    const allBtns = document.querySelectorAll('.btn');
+    allBtns.forEach(b => {
+      if (b.id.startsWith("btn_")) b.disabled = !(open || manualOpen || isAdmin);
+    });
   }
+
+  setInterval(updateButtonStates, 30000);
   updateButtonStates();
-  setInterval(updateButtonStates, 60000);
 </script>
-
-<!-- ✅ Ghi chú Admin realtime -->
-<div id="adminNoteToggle">📝</div>
-<div id="adminNoteBox">
-  <textarea id="adminNoteInput" placeholder="✏️ Nhập ghi chú cho mọi người..."></textarea>
-  <div id="adminNoteDisplay">📝 <span id="adminNoteText" class="placeholder">Không có ghi chú nào</span></div>
-</div>
-
-<style>
-  #adminNoteToggle {
-    position: fixed;
-    bottom: 18px;
-    right: 18px;
-    width: 42px;
-    height: 42px;
-    background: linear-gradient(135deg, #6b46c1, #3b82f6);
-    color: white;
-    font-size: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    cursor: pointer;
-    z-index: 1100;
-  }
-  #adminNoteBox {
-    position: fixed;
-    bottom: 70px;
-    right: 16px;
-    background: rgba(11,18,32,0.97);
-    border: 1px solid rgba(255,255,255,0.06);
-    border-radius: 12px;
-    padding: 15px;
-    width: 450px;
-    max-height: 300px;
-    overflow-y: auto;
-    display: none;
-    z-index: 1100;
-    font-size: 1.05em;
-  }
-  #adminNoteInput {
-    width: 100%;
-    min-height: 120px;
-    max-height: 250px;
-    background: rgba(255,255,255,0.05);
-    border: none;
-    color: white;
-    padding: 10px;
-    border-radius: 8px;
-    resize: vertical;
-    margin-bottom: 8px;
-    display: none;
-  }
-  #adminNoteDisplay { font-size: 15px; color: #d1d5db; white-space: pre-wrap; }
-  #adminNoteText.placeholder {
-    opacity: 0.5;
-    font-style: italic;
-  }
-  @media(max-width:480px){
-    #adminNoteBox { width: calc(100% - 32px); right: 16px; left: 16px; bottom: 80px; }
-    #adminNoteInput { min-height: 100px; }
-  }
-</style>
-
-<script>
-  const adminNoteToggle = document.getElementById("adminNoteToggle");
-  const adminNoteBox = document.getElementById("adminNoteBox");
-  const adminNoteInput = document.getElementById("adminNoteInput");
-  const adminNoteText = document.getElementById("adminNoteText");
-  let noteVisible = false;
-
-  adminNoteToggle.onclick = () => {
-    noteVisible = !noteVisible;
-    adminNoteBox.style.display = noteVisible ? "block" : "none";
-    adminNoteInput.style.display = (noteVisible && sessionStorage.getItem("isAdmin")) ? "block" : "none";
-  };
-
-  adminNoteRef.on("value", snap => {
-    const val = snap.val() || "";
-    if (!val.trim()) {
-      adminNoteText.textContent = "Không có ghi chú nào";
-      adminNoteText.classList.add("placeholder");
-    } else {
-      adminNoteText.textContent = val;
-      adminNoteText.classList.remove("placeholder");
-    }
-    adminNoteInput.value = val;
-  });
-
-  adminNoteInput.addEventListener("input", () => {
-    if (!sessionStorage.getItem("isAdmin")) return;
-    const text = adminNoteInput.value;
-    adminNoteRef.set(text.trim());
-    if (!text.trim()) {
-      adminNoteText.textContent = "Không có ghi chú nào";
-      adminNoteText.classList.add("placeholder");
-    } else {
-      adminNoteText.classList.remove("placeholder");
-    }
-  });
-</script>
-
 </body>
 </html>
