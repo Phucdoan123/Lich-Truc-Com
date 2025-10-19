@@ -88,7 +88,6 @@
     messagingSenderId: "769659188277",
     appId: "1:769659188277:web:da5226a15dbc0f87d46d7c"
   };
-
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
   const shiftsRef = db.ref('shifts');
@@ -195,7 +194,6 @@
       alert("🔒 Ngoài giờ đăng ký (chỉ mở 19:50 Thứ 6 → 21:00 Thứ 7 hoặc admin mở thủ công)");
       return;
     }
-
     let name = localStorage.getItem('myName');
     if (!name) {
       name = prompt('Nhập tên của bạn:');
@@ -231,9 +229,7 @@
       toggleOpenBtn.style.display = 'inline-block';
       clearNameBtn.style.display = 'inline-block';
       sessionStorage.setItem('isAdmin', 'true');
-      if (typeof adminNoteInput !== 'undefined') {
-        adminNoteInput.style.display = noteVisible ? "block" : "none";
-      }
+      adminNoteInput.style.display = "block";
     } else {
       resetBtn.style.display = 'none';
       logoutBtn.style.display = 'none';
@@ -241,18 +237,14 @@
       toggleOpenBtn.style.display = 'none';
       clearNameBtn.style.display = 'none';
       sessionStorage.removeItem('isAdmin');
-      if (typeof adminNoteInput !== 'undefined') {
-        adminNoteInput.style.display = "none";
-      }
+      adminNoteInput.style.display = "none";
     }
   }
 
   adminBtn.onclick = () => {
     const pass = prompt('Nhập mật khẩu Admin:');
-    if (pass === ADMIN_PASSWORD) {
-      alert('✅ Đã đăng nhập Admin');
-      setAdminMode(true);
-    } else alert('❌ Sai mật khẩu');
+    if (pass === ADMIN_PASSWORD) { alert('✅ Đã đăng nhập Admin'); setAdminMode(true); }
+    else alert('❌ Sai mật khẩu');
   };
   logoutBtn.onclick = () => { alert('🚪 Đã đăng xuất'); setAdminMode(false); };
   resetBtn.onclick = () => {
@@ -275,27 +267,11 @@
     updateButtonStates();
   };
 
-  manualOpenRef.on('value', snap => {
-    manualOpen = !!snap.val();
-    updateButtonStates();
-  });
-
-  // ✅ Thêm hàm chuẩn hoá tên
-  function normalizeName(n) {
-    if (!n) return "";
-    return String(n).trim().toLowerCase();
-  }
-
-  // ✅ Vá lỗi admin bị cảnh báo xoá tên
+  manualOpenRef.on('value', snap => { manualOpen = !!snap.val(); updateButtonStates(); });
   blacklistRef.on('value', snap => {
-    const listObj = snap.val() || {};
-    const blacklistSet = new Set(Object.keys(listObj).map(k => normalizeName(k)));
-    const myNameRaw = localStorage.getItem('myName');
-    const myName = normalizeName(myNameRaw);
-
-    if (sessionStorage.getItem('isAdmin')) return;
-
-    if (myName && blacklistSet.has(myName)) {
+    const list = snap.val() || {};
+    const myName = localStorage.getItem('myName');
+    if (myName && list[myName]) {
       alert('⚠️ Tên cũ của bạn đã bị admin xoá, vui lòng nhập lại tên mới.');
       localStorage.removeItem('myName');
     }
@@ -304,9 +280,7 @@
   function isRegistrationOpen() {
     if (manualOpen) return true;
     const now = new Date();
-    const day = now.getDay();
-    const hour = now.getHours();
-    const minute = now.getMinutes();
+    const day = now.getDay(), hour = now.getHours(), minute = now.getMinutes();
     return (day === 5 && (hour > 19 || (hour === 19 && minute >= 50))) ||
            (day === 6 && (hour < 21 || (hour === 21 && minute === 0)));
   }
@@ -335,7 +309,34 @@
   setInterval(updateButtonStates, 60000);
 </script>
 
-<!-- ✅ Ghi chú Admin realtime -->
-<div id="adminNoteToggle">📝</div>
+<!-- ✅ Ghi chú Admin realtime - luôn hiển thị -->
 <div id="adminNoteBox">
-  <textarea id
+  <textarea id="adminNoteInput" placeholder="✏️ Nhập ghi chú cho mọi người..."></textarea>
+  <div id="adminNoteDisplay">📝 <span id="adminNoteText" class="placeholder">Không có ghi chú nào</span></div>
+</div>
+
+<style>
+  #adminNoteBox {
+    position: fixed;
+    bottom: 18px;
+    right: 18px;
+    background: rgba(11,18,32,0.97);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 12px;
+    padding: 15px;
+    width: 450px;
+    max-height: 300px;
+    overflow-y: auto;
+    z-index: 9999;
+    font-size: 1.05em;
+  }
+  #adminNoteInput {
+    width: 100%;
+    min-height: 120px;
+    max-height: 250px;
+    background: rgba(255,255,255,0.05);
+    border: none;
+    color: white;
+    padding: 10px;
+    border-radius: 8px;
+    resize: vertical;
