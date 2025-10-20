@@ -30,7 +30,7 @@
   .btn{margin-top:8px;border:none;padding:8px 10px;border-radius:8px;background:var(--accent);color:white;cursor:pointer;width:100%;transition:opacity 0.3s ease}
   .btn[disabled]{opacity:.45;cursor:not-allowed}
   .delete-btn{color:var(--danger);cursor:pointer;font-weight:bold;margin-left:8px}
-  footer{margin-top:14px;color:var(--muted);font-size:15px} /* Tăng chữ ghi chú */
+  footer{margin-top:14px;color:var(--muted);font-size:15px}
   .admin-panel{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
   .small{font-size:13px;color:var(--muted)}
   #statusBanner{padding:10px;text-align:center;border-radius:8px;margin-bottom:10px;font-weight:600}
@@ -72,7 +72,7 @@
 
 <div id="statusBanner"></div>
 <div class="board-wrap"><div id="board" class="board"></div></div>
-<footer>Ghi chú: Bấm "Đăng ký" → nhập tên. Bấm ❌ để xóa tên của chính bạn. Hệ thống cập nhật realtime.</footer>
+<footer>Ghi chú: Bấm "Đăng ký" → nhập tên. Bấm ❌ để xóa tên của chính bạn (hoặc Admin có thể xóa bất kỳ tên nào). Hệ thống cập nhật realtime.</footer>
 
 <!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
@@ -161,6 +161,7 @@
     });
   });
 
+  // 🔧 Đã chỉnh để Admin có thể xóa bất kỳ ai
   function updateShiftUI(id, arr) {
     const listEl = document.getElementById('list_' + id);
     const barEl = document.getElementById('bar_' + id);
@@ -175,11 +176,20 @@
           <div class="avatar">${name.slice(0,1).toUpperCase()}</div>
           <div>${name}</div>
         </div>`;
-      if (myName && myName === name) {
+      // ✅ Admin có thể xóa bất kỳ ai, người thường chỉ được xóa chính mình
+      if ((myName && myName === name) || sessionStorage.getItem('isAdmin')) {
         const del = document.createElement('span');
         del.className = 'delete-btn';
         del.textContent = '❌';
-        del.onclick = () => removeSelfFromShift(id, name);
+        del.title = sessionStorage.getItem('isAdmin') ? 'Xóa người này (Admin)' : 'Xóa tên của bạn';
+        del.onclick = () => {
+          if (sessionStorage.getItem('isAdmin')) {
+            if (!confirm(`⚠️ Admin xác nhận xóa "${name}" khỏi ca này?`)) return;
+          } else {
+            if (!confirm(`Bạn có chắc muốn xóa "${name}" khỏi ca này?`)) return;
+          }
+          removeSelfFromShift(id, name);
+        };
         p.appendChild(del);
       }
       listEl.appendChild(p);
@@ -212,7 +222,6 @@
   }
 
   function removeSelfFromShift(shiftId, name) {
-    if (!confirm(`Bạn có chắc muốn xóa "${name}" khỏi ca này?`)) return;
     const ref = db.ref('shifts/' + shiftId);
     ref.transaction(current => {
       if (!current) return current;
@@ -229,7 +238,7 @@
       toggleOpenBtn.style.display = 'inline-block';
       clearNameBtn.style.display = 'inline-block';
       sessionStorage.setItem('isAdmin', 'true');
-      adminNoteInput.style.display = noteVisible ? "block" : "none"; // hiển thị input khi admin
+      adminNoteInput.style.display = noteVisible ? "block" : "none";
     } else {
       resetBtn.style.display = 'none';
       logoutBtn.style.display = 'none';
