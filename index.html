@@ -34,21 +34,6 @@
   .admin-panel{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
   .small{font-size:13px;color:var(--muted)}
   #statusBanner{padding:10px;text-align:center;border-radius:8px;margin-bottom:10px;font-weight:600}
-  [title]{position:relative}
-  [title]:hover::after{
-    content:attr(title);
-    position:absolute;
-    bottom:120%;
-    left:50%;
-    transform:translateX(-50%);
-    background:#111;
-    color:#fff;
-    font-size:12px;
-    padding:4px 8px;
-    border-radius:4px;
-    white-space:nowrap;
-    opacity:0.9;
-  }
   @media(max-width:1100px){ .board{grid-template-columns:repeat(3, 1fr)} }
   @media(max-width:720px){ .board{grid-template-columns:repeat(1, 1fr)} header{flex-direction:column;align-items:flex-start} }
 </style>
@@ -74,7 +59,7 @@
 <div class="board-wrap"><div id="board" class="board"></div></div>
 <footer>Ghi chú: Bấm "Đăng ký" → nhập tên. Bấm ❌ để xóa tên của chính bạn (hoặc Admin có thể xóa bất kỳ tên nào). Hệ thống cập nhật realtime.</footer>
 
-<!-- Firebase SDKs -->
+<!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 
@@ -95,6 +80,7 @@
   const manualOpenRef = db.ref('manualOpen');
   const blacklistRef = db.ref('nameBlacklist');
   const adminNoteRef = db.ref('adminNote');
+
   let manualOpen = false;
 
   const days = [
@@ -161,7 +147,6 @@
     });
   });
 
-  // 🔧 Đã chỉnh để Admin có thể xóa bất kỳ ai
   function updateShiftUI(id, arr) {
     const listEl = document.getElementById('list_' + id);
     const barEl = document.getElementById('bar_' + id);
@@ -176,7 +161,6 @@
           <div class="avatar">${name.slice(0,1).toUpperCase()}</div>
           <div>${name}</div>
         </div>`;
-      // ✅ Admin có thể xóa bất kỳ ai, người thường chỉ được xóa chính mình
       if ((myName && myName === name) || sessionStorage.getItem('isAdmin')) {
         const del = document.createElement('span');
         del.className = 'delete-btn';
@@ -205,7 +189,6 @@
       alert("🔒 Ngoài giờ đăng ký (chỉ mở 19:50 Thứ 6 → 21:00 Thứ 7 hoặc admin mở thủ công)");
       return;
     }
-
     let name = localStorage.getItem('myName');
     if (!name) {
       name = prompt('Nhập tên của bạn:').trim();
@@ -258,6 +241,7 @@
     } else alert('❌ Sai mật khẩu');
   };
   logoutBtn.onclick = () => { alert('🚪 Đã đăng xuất'); setAdminMode(false); };
+
   resetBtn.onclick = () => {
     if (!confirm('Reset toàn bộ lịch tuần?')) return;
     const updates = {};
@@ -269,13 +253,15 @@
   };
   if (sessionStorage.getItem('isAdmin') === 'true') setAdminMode(true);
 
-  toggleOpenBtn.onclick = () => {
-    manualOpen = !manualOpen;
-    manualOpenRef.set(manualOpen);
+  // ✅ Đã fix lỗi toggle open manual
+  toggleOpenBtn.onclick = async () => {
+    const newState = !manualOpen;
+    await manualOpenRef.set(newState);
+    manualOpen = newState;
+    updateButtonStates();
     toggleOpenBtn.textContent = manualOpen ? "🔴 Tắt mở ngoài giờ" : "🟢 Mở đăng ký ngoài giờ";
     toggleOpenBtn.style.background = manualOpen ? "#ef4444" : "#10b981";
     alert(manualOpen ? "✅ Đã bật đăng ký ngoài giờ cho mọi người" : "🔒 Đã tắt đăng ký ngoài giờ");
-    updateButtonStates();
   };
 
   manualOpenRef.on('value', snap => {
@@ -322,6 +308,7 @@
       statusBanner.textContent = "🔒 Ngoài giờ đăng ký (sẽ mở 19:50 Thứ 6)";
     }
   }
+
   updateButtonStates();
   setInterval(updateButtonStates, 60000);
 </script>
@@ -408,6 +395,5 @@
     adminNoteRef.set(adminNoteInput.value.trim());
   });
 </script>
-
 </body>
 </html>
