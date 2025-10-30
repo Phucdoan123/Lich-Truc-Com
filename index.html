@@ -246,7 +246,7 @@
       adminNoteInput.style.display = "none";
     }
 
-    // 🟢 Cập nhật lại giao diện khi đổi quyền
+    // ✅ Dòng fix để banner cập nhật ngay khi đổi quyền
     updateButtonStates();
   }
 
@@ -265,13 +265,7 @@
     });
     shiftsRef.set(updates);
   };
-
-  // 🔄 Kiểm tra khi reload trang
-  if (sessionStorage.getItem('isAdmin') === 'true') {
-    setAdminMode(true);
-  } else {
-    updateButtonStates();
-  }
+  if (sessionStorage.getItem('isAdmin') === 'true') setAdminMode(true);
 
   toggleOpenBtn.onclick = async () => {
     const newState = !manualOpen;
@@ -341,80 +335,71 @@
 <style>
   #adminNoteToggle {
     position: fixed;
-    bottom: 18
-<style>
-  #adminNoteToggle {
-    position: fixed;
     bottom: 18px;
     right: 18px;
-    background: var(--accent2);
+    background: var(--accent);
     color: white;
-    font-weight: bold;
-    padding: 10px 12px;
-    border-radius: 999px;
+    padding: 10px;
+    border-radius: 50%;
+    font-size: 22px;
     cursor: pointer;
-    box-shadow: 0 0 10px rgba(0,0,0,0.4);
-    z-index: 999;
+    box-shadow: 0 0 10px rgba(0,0,0,0.3);
+    z-index: 10;
+    transition: all 0.3s ease;
   }
+  #adminNoteToggle:hover { transform: scale(1.1); }
+
   #adminNoteBox {
     position: fixed;
-    bottom: 70px;
+    bottom: 80px;
     right: 18px;
     background: var(--card);
-    border: 1px solid rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.05);
     border-radius: 12px;
     padding: 12px;
-    width: 300px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    width: 260px;
+    box-shadow: 0 0 15px rgba(0,0,0,0.3);
+    z-index: 9;
     display: none;
-    z-index: 998;
   }
   #adminNoteInput {
     width: 100%;
-    min-height: 90px;
-    border-radius: 8px;
+    height: 100px;
     border: none;
-    outline: none;
-    padding: 8px;
+    border-radius: 8px;
     background: rgba(255,255,255,0.05);
-    color: var(--text);
-    font-size: 14px;
+    color: white;
+    padding: 8px;
     display: none;
+    resize: none;
   }
-  #adminNoteDisplay {
-    color: var(--muted);
-    font-size: 14px;
-  }
+  #adminNoteDisplay { font-size: 14px; line-height: 1.5; color: var(--muted); }
 </style>
 
 <script>
   const adminNoteToggle = document.getElementById('adminNoteToggle');
   const adminNoteBox = document.getElementById('adminNoteBox');
   const adminNoteInput = document.getElementById('adminNoteInput');
+  const adminNoteDisplay = document.getElementById('adminNoteDisplay');
   const adminNoteText = document.getElementById('adminNoteText');
   let noteVisible = false;
 
   adminNoteToggle.onclick = () => {
     noteVisible = !noteVisible;
-    adminNoteBox.style.display = noteVisible ? 'block' : 'none';
-    if (sessionStorage.getItem('isAdmin')) {
-      adminNoteInput.style.display = 'block';
-    } else {
-      adminNoteInput.style.display = 'none';
-    }
+    adminNoteBox.style.display = noteVisible ? "block" : "none";
+    if (sessionStorage.getItem('isAdmin')) adminNoteInput.style.display = noteVisible ? "block" : "none";
   };
 
-  adminNoteInput.addEventListener('input', e => {
-    adminNoteRef.set(e.target.value);
+  adminNoteRef.on('value', snap => {
+    const text = snap.val() || "Không có ghi chú nào";
+    adminNoteText.textContent = text;
   });
 
-  adminNoteRef.on('value', snap => {
-    const note = snap.val() || "Không có ghi chú nào";
-    adminNoteText.textContent = note;
-    if (!sessionStorage.getItem('isAdmin')) {
-      adminNoteInput.style.display = 'none';
-    }
-  });
+  adminNoteInput.oninput = e => {
+    const txt = e.target.value.trim();
+    adminNoteRef.set(txt);
+  };
 </script>
+
 </body>
 </html>
