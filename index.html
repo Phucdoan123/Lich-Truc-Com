@@ -244,8 +244,6 @@
       resetBtn.style.display = 'inline-block';
       logoutBtn.style.display = 'inline-block';
       adminBtn.style.display = 'none';
-      // ✅ FIX: Đổi 'inline-block' thành 'block' hoặc 'flex' tùy bố cục, hoặc giữ nguyên 'inline-block' nhưng đảm bảo không bị ghi đè CSS.
-      // Vì .admin-panel là flex container, dùng 'inline-block' là hợp lý, tôi giữ nguyên nhưng fix logic bên dưới.
       toggleOpenBtn.style.display = 'inline-block';
       clearNameBtn.style.display = 'inline-block';
       sessionStorage.setItem('isAdmin', 'true');
@@ -285,7 +283,6 @@
     const newState = !manualOpen;
     await manualOpenRef.set(newState);
     
-    // ✅ Thông báo cho Admin biết trạng thái đã thay đổi
     alert(newState ? "✅ Đã bật đăng ký ngoài giờ cho mọi người" : "🔒 Đã tắt đăng ký ngoài giờ");
   };
 
@@ -321,15 +318,19 @@
   function updateButtonStates() {
     const isOpen = isRegistrationOpen() || sessionStorage.getItem('isAdmin') === 'true';
     const buttons = document.querySelectorAll(".btn");
+    
+    // ✅ SỬA LỖI: Chỉ áp dụng logic disabled cho các nút đăng ký ca trực
     buttons.forEach(btn => {
-      // ✅ FIX QUAN TRỌNG: Bỏ qua hoàn toàn việc thay đổi trạng thái disabled của các nút Admin.
-      // Nếu không, btn.disabled = !isOpen; sẽ vô hiệu hóa nút toggleOpenBtn khi ngoài giờ đăng ký.
-      if (btn === adminBtn || btn === resetBtn || btn === logoutBtn || btn === clearNameBtn || btn === toggleOpenBtn) return;
+      // Chỉ xử lý các nút "Đăng ký" có ID bắt đầu bằng "btn_"
+      if (btn.id && btn.id.startsWith('btn_')) {
+        btn.disabled = !isOpen;
+        btn.style.opacity = isOpen ? "1" : "0.45";
+        btn.title = isOpen ? "" : "Ngoài giờ đăng ký";
+      }
       
-      btn.disabled = !isOpen;
-      btn.style.opacity = isOpen ? "1" : "0.45";
-      btn.title = isOpen ? "" : "Ngoài giờ đăng ký";
+      // Đảm bảo nút toggleOpenBtn (và các nút Admin khác) không bao giờ bị disabled nếu chúng đang được hiển thị
     });
+    
     if (isOpen) {
       statusBanner.style.background = "rgba(16,185,129,0.15)";
       statusBanner.style.color = "#10b981";
