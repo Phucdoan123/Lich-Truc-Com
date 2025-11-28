@@ -74,7 +74,6 @@
 <div class="board-wrap"><div id="board" class="board"></div></div>
 <footer>Ghi chú: Bấm "Đăng ký" → nhập tên. Bấm ❌ để xóa tên của chính bạn (hoặc Admin có thể xóa bất kỳ tên nào). Hệ thống cập nhật realtime.</footer>
 
-<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 
@@ -233,6 +232,12 @@
 
   const ADMIN_PASSWORD = "Anbinh123";
 
+  // ✅ BỔ SUNG: Hàm cập nhật trạng thái UI của nút Mở/Tắt ngoài giờ
+  function updateToggleOpenBtnUI() {
+    toggleOpenBtn.textContent = manualOpen ? "🔴 Tắt mở ngoài giờ" : "🟢 Mở đăng ký ngoài giờ";
+    toggleOpenBtn.style.background = manualOpen ? "#ef4444" : "#10b981";
+  }
+
   // LƯU Ý: thay vì dùng biến DOM 'adminNoteInput' có thể chưa tồn tại,
   // ta truy vấn trực tiếp khi cần để tránh lỗi "undefined" làm dừng script.
   function setAdminMode(on) {
@@ -255,7 +260,8 @@
       if (adminNoteInputEl) adminNoteInputEl.style.display = "none";
     }
 
-    // ✅ Dòng fix để banner cập nhật ngay khi đổi quyền
+    // ✅ FIX 1: Đảm bảo UI nút toggleOpenBtn được cập nhật ngay khi Admin login/logout
+    updateToggleOpenBtnUI(); 
     updateButtonStates();
   }
 
@@ -279,15 +285,17 @@
   toggleOpenBtn.onclick = async () => {
     const newState = !manualOpen;
     await manualOpenRef.set(newState);
-    manualOpen = newState;
-    updateButtonStates();
-    toggleOpenBtn.textContent = manualOpen ? "🔴 Tắt mở ngoài giờ" : "🟢 Mở đăng ký ngoài giờ";
-    toggleOpenBtn.style.background = manualOpen ? "#ef4444" : "#10b981";
-    alert(manualOpen ? "✅ Đã bật đăng ký ngoài giờ cho mọi người" : "🔒 Đã tắt đăng ký ngoài giờ");
+    // ✅ FIX 2: Bỏ cập nhật manualOpen và updateButtonStates ở đây.
+    // Việc này sẽ được xử lý bởi listener manualOpenRef.on('value', ...) bên dưới để đảm bảo đồng bộ từ Firebase.
+    alert(newState ? "✅ Đã bật đăng ký ngoài giờ cho mọi người" : "🔒 Đã tắt đăng ký ngoài giờ");
   };
 
   manualOpenRef.on('value', snap => {
     manualOpen = !!snap.val();
+    // ✅ FIX 3: Gọi cập nhật UI cho nút toggleOpenBtn và các nút đăng ký khác ngay khi giá trị manualOpen thay đổi
+    if (sessionStorage.getItem('isAdmin')) {
+      updateToggleOpenBtnUI();
+    }
     updateButtonStates();
   });
 
@@ -335,7 +343,6 @@
   setInterval(updateButtonStates, 60000);
 </script>
 
-<!-- ✅ Ghi chú Admin realtime -->
 <div id="adminNoteToggle">📝</div>
 <div id="adminNoteBox">
   <textarea id="adminNoteInput" placeholder="✏️ Nhập ghi chú cho mọi người..."></textarea>
