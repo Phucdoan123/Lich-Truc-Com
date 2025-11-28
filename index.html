@@ -51,61 +51,6 @@
   }
   @media(max-width:1100px){ .board{grid-template-columns:repeat(3, 1fr)} }
   @media(max-width:720px){ .board{grid-template-columns:repeat(1, 1fr)} header{flex-direction:column;align-items:flex-start} }
-  
-  /* CSS cho Ghi chú Admin */
-  #adminNoteToggle {
-    position: fixed;
-    bottom: 18px;
-    right: 18px;
-    width: 42px;
-    height: 42px;
-    background: linear-gradient(135deg, #6b46c1, #3b82f6);
-    color: white;
-    font-size: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    cursor: pointer;
-    z-index: 1100;
-  }
-  #adminNoteBox {
-    position: fixed;
-    bottom: 70px;
-    right: 16px;
-    background: rgba(11,18,32,0.97);
-    border: 1px solid rgba(255,255,255,0.06);
-    border-radius: 12px;
-    padding: 15px; 
-    width: 450px; 
-    max-height: 300px; 
-    overflow-y: auto;
-    display: none;
-    z-index: 1100;
-    font-size: 1.05em;
-  }
-  #adminNoteInput {
-    width: 100%;
-    min-height: 120px; 
-    max-height: 250px;
-    background: rgba(255,255,255,0.05);
-    border: none;
-    color: white;
-    padding: 10px;
-    border-radius: 8px;
-    resize: vertical;
-    margin-bottom: 8px;
-    display: none;
-  }
-  #adminNoteDisplay { font-size: 15px; color: #d1d5db; white-space: pre-wrap; }
-  #adminNoteText.placeholder {
-    opacity: 0.5;
-    font-style: italic;
-  }
-  @media(max-width:480px){
-    #adminNoteBox { width: calc(100% - 32px); right: 16px; left: 16px; bottom: 80px; }
-    #adminNoteInput { min-height: 100px; }
-  }
 </style>
 </head>
 
@@ -245,7 +190,9 @@
   }
 
   function onRegister(shiftId) {
-    if (!isRegistrationOpen() && !sessionStorage.getItem('isAdmin')) {
+    // Sửa lỗi logic kiểm tra trạng thái Admin
+    const isAdmin = sessionStorage.getItem('isAdmin') === 'true';
+    if (!isRegistrationOpen() && !isAdmin) {
       alert("🔒 Ngoài giờ đăng ký (chỉ mở 19:50 Thứ 6 → 21:00 Thứ 7 hoặc admin mở thủ công)");
       return;
     }
@@ -276,16 +223,8 @@
     });
   }
 
-  // ✅ BỔ SUNG: Hàm cập nhật UI nút Admin (giúp đồng bộ)
-  function updateToggleOpenBtnUI() {
-    toggleOpenBtn.textContent = manualOpen ? "🔴 Tắt mở ngoài giờ" : "🟢 Mở đăng ký ngoài giờ";
-    toggleOpenBtn.style.background = manualOpen ? "#ef4444" : "#10b981";
-  }
-  
   const ADMIN_PASSWORD = "Anbinh123";
   function setAdminMode(on) {
-    // Tham chiếu đến adminNoteInput để tránh lỗi
-    const adminNoteInputEl = document.getElementById('adminNoteInput'); 
     if (on) {
       resetBtn.style.display = 'inline-block';
       logoutBtn.style.display = 'inline-block';
@@ -293,10 +232,10 @@
       toggleOpenBtn.style.display = 'inline-block';
       clearNameBtn.style.display = 'inline-block';
       sessionStorage.setItem('isAdmin', 'true');
-      if (adminNoteInputEl) { 
-            // noteVisible được định nghĩa ở script sau
-            adminNoteInputEl.style.display = typeof noteVisible !== 'undefined' && noteVisible ? "block" : "none";
-        }
+      // kiểm tra an toàn: adminNoteInput có thể được khai báo sau (trong thẻ script khác)
+      if (typeof adminNoteInput !== 'undefined') {
+        adminNoteInput.style.display = noteVisible ? "block" : "none";
+      }
     } else {
       resetBtn.style.display = 'none';
       logoutBtn.style.display = 'none';
@@ -304,10 +243,11 @@
       toggleOpenBtn.style.display = 'none';
       clearNameBtn.style.display = 'none';
       sessionStorage.removeItem('isAdmin');
-      if (adminNoteInputEl) { 
-            adminNoteInputEl.style.display = "none";
-        }
+      if (typeof adminNoteInput !== 'undefined') {
+        adminNoteInput.style.display = "none";
+      }
     }
+    updateButtonStates(); // Cập nhật trạng thái nút khi chuyển Admin Mode
   }
 
   adminBtn.onclick = () => {
@@ -329,7 +269,6 @@
   };
   if (sessionStorage.getItem('isAdmin') === 'true') setAdminMode(true);
 
-  // LOGIC CŨ CỦA BẠN (GIỮ NGUYÊN)
   toggleOpenBtn.onclick = () => {
     manualOpen = !manualOpen;
     manualOpenRef.set(manualOpen);
@@ -339,15 +278,8 @@
     updateButtonStates();
   };
 
-  // LOGIC LISTENER (BỔ SUNG CẬP NHẬT UI ADMIN)
   manualOpenRef.on('value', snap => {
     manualOpen = !!snap.val();
-    
-    // ✅ BỔ SUNG: Cập nhật UI nút Admin sau khi Firebase đồng bộ
-    if (sessionStorage.getItem('isAdmin')) {
-      updateToggleOpenBtnUI(); 
-    }
-    
     updateButtonStates();
   });
 
@@ -371,15 +303,21 @@
   }
 
   function updateButtonStates() {
-    const isOpen = isRegistrationOpen() || sessionStorage.getItem('isAdmin');
+    // Sửa lỗi: Đảm bảo isAdmin là boolean thực và chỉ cần isRegistrationOpen() cho người dùng thông thường
+    const isAdmin = sessionStorage.getItem('isAdmin') === 'true';
+    const isOpen = isRegistrationOpen() || isAdmin;
+    
     const buttons = document.querySelectorAll(".btn");
     buttons.forEach(btn => {
-      if (["adminBtn","resetBtn","logoutBtn","toggleOpenBtn",""].includes(btn.id)) return;
-      if (btn === clearNameBtn) return;
+      // Loại trừ các nút Admin/Control có ID cụ thể
+      if (["adminBtn","resetBtn","logoutBtn","toggleOpenBtn"].includes(btn.id) || btn === clearNameBtn) return;
+      
+      // Áp dụng trạng thái cho nút Đăng ký
       btn.disabled = !isOpen;
       btn.style.opacity = isOpen ? "1" : "0.45";
       btn.title = isOpen ? "" : "Ngoài giờ đăng ký";
     });
+    
     if (isOpen) {
       statusBanner.style.background = "rgba(16,185,129,0.15)";
       statusBanner.style.color = "#10b981";
@@ -399,6 +337,66 @@
   <textarea id="adminNoteInput" placeholder="✏️ Nhập ghi chú cho mọi người..."></textarea>
   <div id="adminNoteDisplay">📝 <span id="adminNoteText" class="placeholder">Không có ghi chú nào</span></div>
 </div>
+
+<style>
+  #adminNoteToggle {
+    position: fixed;
+    bottom: 18px;
+    right: 18px;
+    width: 42px;
+    height: 42px;
+    background: linear-gradient(135deg, #6b46c1, #3b82f6);
+    color: white;
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 1100;
+  }
+  /* Tăng kích thước khung 1.5x so với ban đầu */
+  #adminNoteBox {
+    position: fixed;
+    bottom: 70px;
+    right: 16px;
+    background: rgba(11,18,32,0.97);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 12px;
+    padding: 15px; /* tăng padding */
+    width: 450px; /* từ 300px -> 450px */
+    max-height: 300px; /* từ 200px -> 300px */
+    overflow-y: auto;
+    display: none;
+    z-index: 1100;
+    font-size: 1.05em;
+  }
+  #adminNoteInput {
+    width: 100%;
+    min-height: 120px; /* tăng chiều cao */
+    max-height: 250px;
+    background: rgba(255,255,255,0.05);
+    border: none;
+    color: white;
+    padding: 10px;
+    border-radius: 8px;
+    resize: vertical;
+    margin-bottom: 8px;
+    display: none;
+  }
+  #adminNoteDisplay { font-size: 15px; color: #d1d5db; white-space: pre-wrap; }
+  /* placeholder mờ */
+  #adminNoteText.placeholder {
+    opacity: 0.5;
+    font-style: italic;
+  }
+
+  /* responsive nhỏ màn hình: giữ hợp lý */
+  @media(max-width:480px){
+    #adminNoteBox { width: calc(100% - 32px); right: 16px; left: 16px; bottom: 80px; }
+    #adminNoteInput { min-height: 100px; }
+  }
+</style>
 
 <script>
   const adminNoteToggle = document.getElementById("adminNoteToggle");
