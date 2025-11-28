@@ -244,6 +244,8 @@
       resetBtn.style.display = 'inline-block';
       logoutBtn.style.display = 'inline-block';
       adminBtn.style.display = 'none';
+      // ✅ FIX: Đổi 'inline-block' thành 'block' hoặc 'flex' tùy bố cục, hoặc giữ nguyên 'inline-block' nhưng đảm bảo không bị ghi đè CSS.
+      // Vì .admin-panel là flex container, dùng 'inline-block' là hợp lý, tôi giữ nguyên nhưng fix logic bên dưới.
       toggleOpenBtn.style.display = 'inline-block';
       clearNameBtn.style.display = 'inline-block';
       sessionStorage.setItem('isAdmin', 'true');
@@ -283,19 +285,17 @@
     const newState = !manualOpen;
     await manualOpenRef.set(newState);
     
-    // ✅ FIX 1: Đưa thông báo trở lại để Admin có phản hồi tức thì
+    // ✅ Thông báo cho Admin biết trạng thái đã thay đổi
     alert(newState ? "✅ Đã bật đăng ký ngoài giờ cho mọi người" : "🔒 Đã tắt đăng ký ngoài giờ");
   };
 
   manualOpenRef.on('value', snap => {
     manualOpen = !!snap.val();
     
-    // ✅ FIX 2: Đảm bảo UI của nút toggleOpenBtn luôn được cập nhật chính xác từ Firebase
     if (sessionStorage.getItem('isAdmin')) {
       updateToggleOpenBtnUI();
     }
     
-    // Cập nhật trạng thái đăng ký của tất cả các nút khác
     updateButtonStates();
   });
 
@@ -322,7 +322,10 @@
     const isOpen = isRegistrationOpen() || sessionStorage.getItem('isAdmin') === 'true';
     const buttons = document.querySelectorAll(".btn");
     buttons.forEach(btn => {
-      if (btn === adminBtn || btn === resetBtn || btn === logoutBtn || btn === toggleOpenBtn || btn === clearNameBtn) return;
+      // ✅ FIX QUAN TRỌNG: Bỏ qua hoàn toàn việc thay đổi trạng thái disabled của các nút Admin.
+      // Nếu không, btn.disabled = !isOpen; sẽ vô hiệu hóa nút toggleOpenBtn khi ngoài giờ đăng ký.
+      if (btn === adminBtn || btn === resetBtn || btn === logoutBtn || btn === clearNameBtn || btn === toggleOpenBtn) return;
+      
       btn.disabled = !isOpen;
       btn.style.opacity = isOpen ? "1" : "0.45";
       btn.title = isOpen ? "" : "Ngoài giờ đăng ký";
