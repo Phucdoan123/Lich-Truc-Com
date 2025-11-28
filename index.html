@@ -114,6 +114,7 @@
   <div>
     <h1>Đăng ký trực cơm — Bảng tuần</h1>
     <div class="small">Thứ 2 → Thứ 7 (Sáng/Chiều). Thêm: Chiều Chủ Nhật. Mỗi ca tối đa 3 người.</div>
+    <div id="adminNoteTextHeader" class="small" style="font-style:italic;color:#facc15;margin-top:4px;"></div>
   </div>
   <div class="controls">
     <div class="admin-panel">
@@ -232,7 +233,7 @@
           <div class="avatar">${name.slice(0,1).toUpperCase()}</div>
           <div>${name}</div>
         </div>`;
-      if ((myName && myName === name) || sessionStorage.getItem('isAdmin')) { // Thêm điều kiện Admin có thể xóa
+      if ((myName && myName === name) || sessionStorage.getItem('isAdmin')) { 
         const del = document.createElement('span');
         del.className = 'delete-btn';
         del.textContent = '❌';
@@ -293,7 +294,6 @@
     }
 
   function setAdminMode(on) {
-    // Cần dùng adminNoteInput từ script bên dưới, dùng kiểm tra an toàn
     const adminNoteInputEl = document.getElementById('adminNoteInput'); 
     if (on) {
       resetBtn.style.display = 'inline-block';
@@ -313,7 +313,7 @@
       if (adminNoteInputEl) adminNoteInputEl.style.display = "none";
     }
 
-    updateToggleOpenBtnUI(); // Cập nhật nút Admin
+    updateToggleOpenBtnUI(); 
     updateButtonStates();
   }
 
@@ -346,11 +346,11 @@
   manualOpenRef.on('value', snap => {
     manualOpen = !!snap.val();
     
-    // ✅ FIX LỖI: Toàn bộ việc cập nhật UI sau khi Admin bật/tắt phải nằm ở đây để đồng bộ
+    // ✅ FIX LỖI: Cập nhật trạng thái nút Admin và trạng thái chung phải nằm ở đây để đồng bộ
     if (sessionStorage.getItem('isAdmin')) {
-        updateToggleOpenBtnUI(); // Cập nhật nút Admin trên máy Admin
+        updateToggleOpenBtnUI(); 
     }
-    updateButtonStates(); // Cập nhật trạng thái Đăng ký cho tất cả máy khách
+    updateButtonStates(); 
   });
 
   blacklistRef.on('value', snap => {
@@ -411,6 +411,8 @@
   const adminNoteBox = document.getElementById("adminNoteBox");
   const adminNoteInput = document.getElementById("adminNoteInput");
   const adminNoteText = document.getElementById("adminNoteText");
+  // Lấy element để hiển thị ghi chú tóm tắt trên header
+  const adminNoteTextHeader = document.getElementById("adminNoteTextHeader"); 
   let noteVisible = false;
 
   adminNoteToggle.onclick = () => {
@@ -421,12 +423,17 @@
 
   adminNoteRef.on("value", snap => {
     const val = snap.val() || "";
-    if (!val.trim()) {
+    const trimmedVal = val.trim();
+    
+    if (!trimmedVal) {
       adminNoteText.textContent = "Không có ghi chú nào";
       adminNoteText.classList.add("placeholder");
+      adminNoteTextHeader.textContent = '';
     } else {
       adminNoteText.textContent = val;
       adminNoteText.classList.remove("placeholder");
+      // Hiển thị ghi chú tóm tắt trên header
+      adminNoteTextHeader.textContent = `⚠️ Ghi chú Admin: ${trimmedVal.substring(0, 50)}...`;
     }
     if (typeof adminNoteInput !== 'undefined') adminNoteInput.value = val;
   });
@@ -434,13 +441,7 @@
   adminNoteInput.addEventListener("input", () => {
     if (!sessionStorage.getItem("isAdmin")) return;
     const text = adminNoteInput.value;
-    adminNoteRef.set(text.trim());
-    if (!text.trim()) {
-      adminNoteText.textContent = "Không có ghi chú nào";
-      adminNoteText.classList.add("placeholder");
-    } else {
-      adminNoteText.classList.remove("placeholder");
-    }
+    adminNoteRef.set(text); // Lưu nguyên văn bản (bao gồm khoảng trắng đầu/cuối để admin note được)
   });
 </script>
 </body>
