@@ -300,26 +300,41 @@
            (day === 6 && (hour < 21 || (hour === 21 && minute === 0)));
   }
 
-  function updateButtonStates() {
-    const isOpen = isRegistrationOpen() || sessionStorage.getItem('isAdmin');
-    const buttons = document.querySelectorAll(".btn");
-    buttons.forEach(btn => {
-      if (["adminBtn","resetBtn","logoutBtn","toggleOpenBtn",""].includes(btn.id)) return;
-      if (btn === clearNameBtn) return;
-      btn.disabled = !isOpen;
-      btn.style.opacity = isOpen ? "1" : "0.45";
-      btn.title = isOpen ? "" : "Ngoài giờ đăng ký";
-    });
-    if (isOpen) {
-      statusBanner.style.background = "rgba(16,185,129,0.15)";
-      statusBanner.style.color = "#10b981";
-      statusBanner.textContent = manualOpen ? "🟢 Đăng ký đang mở (Admin bật thủ công)" : "🟢 Đang trong thời gian đăng ký";
-    } else {
-      statusBanner.style.background = "rgba(239,68,68,0.15)";
-      statusBanner.style.color = "#ef4444";
-      statusBanner.textContent = "🔒 Ngoài giờ đăng ký (sẽ mở 19:50 Thứ 6)";
-    }
-  }
+ function updateButtonStates() {
+    const isOpen = isRegistrationOpen() || sessionStorage.getItem('isAdmin');
+    const buttons = document.querySelectorAll(".btn");
+
+    buttons.forEach(btn => {
+        // Bỏ qua các nút Admin control (reset, logout, adminBtn, toggleOpenBtn) và nút 'Xóa tên máy khách'
+        if (["adminBtn", "resetBtn", "logoutBtn", "toggleOpenBtn", ""].includes(btn.id) || btn === clearNameBtn) {
+            return;
+        }
+
+        // Xác định nút Đăng ký (có id bắt đầu bằng 'btn_')
+        if (btn.id.startsWith('btn_')) {
+            // KHÔNG thay đổi thuộc tính .disabled ở đây cho nút Đăng ký.
+            // Việc chặn đăng ký sẽ được xử lý bằng Alert trong hàm onRegister().
+        } else {
+            // Các nút khác (nếu có) vẫn disabled khi ngoài giờ.
+            btn.disabled = !isOpen;
+        }
+
+        // Thay đổi opacity và title cho tất cả nút (trừ Admin controls đã return)
+        btn.style.opacity = isOpen ? "1" : "0.45";
+        btn.title = isOpen ? "" : "Ngoài giờ đăng ký";
+    });
+    
+    // Cập nhật trạng thái banner
+    if (isOpen) {
+      statusBanner.style.background = "rgba(16,185,129,0.15)";
+      statusBanner.style.color = "#10b981";
+      statusBanner.textContent = manualOpen ? "🟢 Đăng ký đang mở (Admin bật thủ công)" : "🟢 Đang trong thời gian đăng ký";
+    } else {
+      statusBanner.style.background = "rgba(239,68,68,0.15)";
+      statusBanner.style.color = "#ef4444";
+      statusBanner.textContent = "🔒 Ngoài giờ đăng ký (sẽ mở 19:50 Thứ 6)";
+    }
+  }
   updateButtonStates();
   setInterval(updateButtonStates, 60000);
 </script>
@@ -436,3 +451,4 @@
 
 </body>
 </html>
+
