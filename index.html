@@ -536,21 +536,16 @@
 
 
 
-  toggleOpenBtn.onclick = () => {
-
-    manualOpen = !manualOpen;
-
-    manualOpenRef.set(manualOpen);
-
-    toggleOpenBtn.textContent = manualOpen ? "🔴 Tắt mở ngoài giờ" : "🟢 Mở đăng ký ngoài giờ";
-
-    toggleOpenBtn.style.background = manualOpen ? "#ef4444" : "#10b981";
-
-    alert(manualOpen ? "✅ Đã bật đăng ký ngoài giờ cho mọi người" : "🔒 Đã tắt đăng ký ngoài giờ");
-
-    updateButtonStates();
-
-  };
+   toggleOpenBtn.onclick = () => {
+    manualOpen = !manualOpen;
+    // Dòng DEBUG để kiểm tra giá trị và kiểu dữ liệu trước khi gửi lên Firebase
+    console.log("Admin setting manualOpen to (TYPE:", typeof manualOpen, "):", manualOpen); 
+    manualOpenRef.set(manualOpen);
+    toggleOpenBtn.textContent = manualOpen ? "🔴 Tắt mở ngoài giờ" : "🟢 Mở đăng ký ngoài giờ";
+    toggleOpenBtn.style.background = manualOpen ? "#ef4444" : "#10b981";
+    alert(manualOpen ? "✅ Đã bật đăng ký ngoài giờ cho mọi người" : "🔒 Đã tắt đăng ký ngoài giờ");
+    updateButtonStates();
+  };
 
 
 
@@ -892,5 +887,6 @@
 </body>
 
 </html>
+
 
 
