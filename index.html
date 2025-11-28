@@ -6,433 +6,442 @@
 <title>Đăng ký trực cơm — Bảng tuần</title>
 
 <style>
-  :root{
-    --bg:#071021; --card:#0b1220; --accent:#6b46c1; --muted:#9aa4b2; --text:#e6eef6;
-    --accent2:#3b82f6; --danger:#ef4444;
-  }
-  *{box-sizing:border-box}
-  body{margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Helvetica,Arial;background:linear-gradient(180deg,#061326,#081428);color:var(--text);padding:18px}
-  header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:12px;flex-wrap:wrap}
-  h1{margin:0;font-size:20px}
-  .controls{display:flex;gap:8px;align-items:center}
-  .board-wrap{overflow:auto}
-  .board{display:grid;grid-template-columns:repeat(6, 1fr);gap:12px}
-  .col{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:10px;padding:12px;border:1px solid rgba(255,255,255,0.03);min-height:160px}
-  .col h3{margin:0 0 8px 0;font-size:14px;color:#cbd5e1;text-align:center}
-  .shift{background:#071428;border-radius:8px;padding:8px;margin-bottom:10px;border:1px solid rgba(255,255,255,0.03)}
-  .meta{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
-  .title{font-weight:600}
-  .progress{height:8px;background:rgba(255,255,255,0.03);border-radius:99px;overflow:hidden;margin-bottom:8px}
-  .bar{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));width:0%}
-  .list{display:flex;flex-direction:column;gap:6px}
-  .person{background:rgba(255,255,255,0.02);padding:6px;border-radius:6px;display:flex;align-items:center;gap:8px;justify-content:space-between}
-  .avatar{width:28px;height:28px;border-radius:999px;background:#1f2937;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700}
-  .btn{margin-top:8px;border:none;padding:8px 10px;border-radius:8px;background:var(--accent);color:white;cursor:pointer;width:100%;transition:opacity 0.3s ease}
-  .btn[disabled]{opacity:.45;cursor:not-allowed}
-  .delete-btn{color:var(--danger);cursor:pointer;font-weight:bold;margin-left:8px}
-  footer{margin-top:14px;color:var(--muted);font-size:15px} /* Tăng chữ ghi chú */
-  .admin-panel{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-  .small{font-size:13px;color:var(--muted)}
-  #statusBanner{padding:10px;text-align:center;border-radius:8px;margin-bottom:10px;font-weight:600}
-  [title]{position:relative}
-  [title]:hover::after{
-    content:attr(title);
-    position:absolute;
-    bottom:120%;
-    left:50%;
-    transform:translateX(-50%);
-    background:#111;
-    color:#fff;
-    font-size:12px;
-    padding:4px 8px;
-    border-radius:4px;
-    white-space:nowrap;
-    opacity:0.9;
-  }
-  @media(max-width:1100px){ .board{grid-template-columns:repeat(3, 1fr)} }
-  @media(max-width:720px){ .board{grid-template-columns:repeat(1, 1fr)} header{flex-direction:column;align-items:flex-start} }
+  :root{
+    --bg:#071021; --card:#0b1220; --accent:#6b46c1; --muted:#9aa4b2; --text:#e6eef6;
+    --accent2:#3b82f6; --danger:#ef4444;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Helvetica,Arial;background:linear-gradient(180deg,#061326,#081428);color:var(--text);padding:18px}
+  header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:12px;flex-wrap:wrap}
+  h1{margin:0;font-size:20px}
+  .controls{display:flex;gap:8px;align-items:center}
+  .board-wrap{overflow:auto}
+  .board{display:grid;grid-template-columns:repeat(6, 1fr);gap:12px}
+  .col{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:10px;padding:12px;border:1px solid rgba(255,255,255,0.03);min-height:160px}
+  .col h3{margin:0 0 8px 0;font-size:14px;color:#cbd5e1;text-align:center}
+  .shift{background:#071428;border-radius:8px;padding:8px;margin-bottom:10px;border:1px solid rgba(255,255,255,0.03)}
+  .meta{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+  .title{font-weight:600}
+  .progress{height:8px;background:rgba(255,255,255,0.03);border-radius:99px;overflow:hidden;margin-bottom:8px}
+  .bar{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));width:0%}
+  .list{display:flex;flex-direction:column;gap:6px}
+  .person{background:rgba(255,255,255,0.02);padding:6px;border-radius:6px;display:flex;align-items:center;gap:8px;justify-content:space-between}
+  .avatar{width:28px;height:28px;border-radius:999px;background:#1f2937;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700}
+  .btn{margin-top:8px;border:none;padding:8px 10px;border-radius:8px;background:var(--accent);color:white;cursor:pointer;width:100%;transition:opacity 0.3s ease}
+  .btn[disabled]{opacity:.45;cursor:not-allowed}
+  .delete-btn{color:var(--danger);cursor:pointer;font-weight:bold;margin-left:8px}
+  footer{margin-top:14px;color:var(--muted);font-size:15px} 
+  .admin-panel{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .small{font-size:13px;color:var(--muted)}
+  #statusBanner{padding:10px;text-align:center;border-radius:8px;margin-bottom:10px;font-weight:600}
+  [title]{position:relative}
+  [title]:hover::after{
+    content:attr(title);
+    position:absolute;
+    bottom:120%;
+    left:50%;
+    transform:translateX(-50%);
+    background:#111;
+    color:#fff;
+    font-size:12px;
+    padding:4px 8px;
+    border-radius:4px;
+    white-space:nowrap;
+    opacity:0.9;
+  }
+  @media(max-width:1100px){ .board{grid-template-columns:repeat(3, 1fr)} }
+  @media(max-width:720px){ .board{grid-template-columns:repeat(1, 1fr)} header{flex-direction:column;align-items:flex-start} }
+
+  /* Style cho Admin Note */
+  #adminNoteToggle {
+    position: fixed;
+    bottom: 18px;
+    right: 18px;
+    width: 42px;
+    height: 42px;
+    background: linear-gradient(135deg, #6b46c1, #3b82f6);
+    color: white;
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 1100;
+  }
+  #adminNoteBox {
+    position: fixed;
+    bottom: 70px;
+    right: 16px;
+    background: rgba(11,18,32,0.97);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 12px;
+    padding: 15px; 
+    width: 450px; 
+    max-height: 300px; 
+    overflow-y: auto;
+    display: none;
+    z-index: 1100;
+    font-size: 1.05em;
+  }
+  #adminNoteInput {
+    width: 100%;
+    min-height: 120px; 
+    max-height: 250px;
+    background: rgba(255,255,255,0.05);
+    border: none;
+    color: white;
+    padding: 10px;
+    border-radius: 8px;
+    resize: vertical;
+    margin-bottom: 8px;
+    display: none;
+  }
+  #adminNoteDisplay { font-size: 15px; color: #d1d5db; white-space: pre-wrap; }
+  #adminNoteText.placeholder {
+    opacity: 0.5;
+    font-style: italic;
+  }
+  @media(max-width:480px){
+    #adminNoteBox { width: calc(100% - 32px); right: 16px; left: 16px; bottom: 80px; }
+    #adminNoteInput { min-height: 100px; }
+  }
 </style>
 </head>
 
 <body>
 <header>
-  <div>
-    <h1>Đăng ký trực cơm — Bảng tuần</h1>
-    <div class="small">Thứ 2 → Thứ 7 (Sáng/Chiều). Thêm: Chiều Chủ Nhật. Mỗi ca tối đa 3 người.</div>
-  </div>
-  <div class="controls">
-    <div class="admin-panel">
-      <button id="adminBtn" class="btn" style="background:transparent;border:1px solid rgba(255,255,255,0.06);padding:6px 10px">Đăng nhập Admin</button>
-      <button id="resetBtn" class="btn" style="background:var(--danger);display:none">🔄 Reset Tuần (Admin)</button>
-      <button id="toggleOpenBtn" class="btn" style="background:#10b981;display:none">🟢 Mở đăng ký ngoài giờ</button>
-      <button id="logoutBtn" class="btn" style="background:#374151;display:none">🚪 Đăng xuất</button>
-    </div>
-  </div>
+  <div>
+    <h1>Đăng ký trực cơm — Bảng tuần</h1>
+    <div class="small">Thứ 2 → Thứ 7 (Sáng/Chiều). Thêm: Chiều Chủ Nhật. Mỗi ca tối đa 3 người.</div>
+  </div>
+  <div class="controls">
+    <div class="admin-panel">
+      <button id="adminBtn" class="btn" style="background:transparent;border:1px solid rgba(255,255,255,0.06);padding:6px 10px">Đăng nhập Admin</button>
+      <button id="resetBtn" class="btn" style="background:var(--danger);display:none">🔄 Reset Tuần (Admin)</button>
+      <button id="toggleOpenBtn" class="btn" style="background:#10b981;display:none">🟢 Mở đăng ký ngoài giờ</button>
+      <button id="logoutBtn" class="btn" style="background:#374151;display:none">🚪 Đăng xuất</button>
+    </div>
+  </div>
 </header>
 
 <div id="statusBanner"></div>
 <div class="board-wrap"><div id="board" class="board"></div></div>
-<footer>Ghi chú: Bấm "Đăng ký" → nhập tên. Bấm ❌ để xóa tên của chính bạn. Hệ thống cập nhật realtime.</footer>
+<footer>Ghi chú: Bấm "Đăng ký" → nhập tên. Bấm ❌ để xóa tên của chính bạn (hoặc Admin có thể xóa bất kỳ tên nào). Hệ thống cập nhật realtime.</footer>
 
-<!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 
 <script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyCZ8o7Z855RhsncCZlEt4zDe6ps-29RAq0",
-    authDomain: "lich-truc-com.firebaseapp.com",
-    databaseURL: "https://lich-truc-com-default-rtdb.firebaseio.com",
-    projectId: "lich-truc-com",
-    storageBucket: "lich-truc-com.firebasestorage.app",
-    messagingSenderId: "769659188277",
-    appId: "1:769659188277:web:da5226a15dbc0f87d46d7c"
-  };
+  const firebaseConfig = {
+    apiKey: "AIzaSyCZ8o7Z855RhsncCZlEt4zDe6ps-29RAq0",
+    authDomain: "lich-truc-com.firebaseapp.com",
+    databaseURL: "https://lich-truc-com-default-rtdb.firebaseio.com",
+    projectId: "lich-truc-com",
+    storageBucket: "lich-truc-com.firebasestorage.app",
+    messagingSenderId: "769659188277",
+    appId: "1:769659188277:web:da5226a15dbc0f87d46d7c"
+  };
 
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.database();
-  const shiftsRef = db.ref('shifts');
-  const manualOpenRef = db.ref('manualOpen');
-  const blacklistRef = db.ref('nameBlacklist');
-  const adminNoteRef = db.ref('adminNote');
-  let manualOpen = false;
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+  const shiftsRef = db.ref('shifts');
+  const manualOpenRef = db.ref('manualOpen');
+  const blacklistRef = db.ref('nameBlacklist');
+  const adminNoteRef = db.ref('adminNote');
+  let manualOpen = false;
 
-  const days = [
-    { label: "Thứ 2", key: "thu2" },
-    { label: "Thứ 3", key: "thu3" },
-    { label: "Thứ 4", key: "thu4" },
-    { label: "Thứ 5", key: "thu5" },
-    { label: "Thứ 6", key: "thu6" },
-    { label: "Thứ 7", key: "thu7" },
-    { label: "Chủ Nhật", key: "cn" }
-  ];
-  const slotsDefault = [{ id: "ca1", title: "Sáng" }, { id: "ca2", title: "Chiều" }];
-  const slotsCN = [{ id: "ca2", title: "Chiều" }];
-  const MAX = 3;
+  const days = [
+    { label: "Thứ 2", key: "thu2" },
+    { label: "Thứ 3", key: "thu3" },
+    { label: "Thứ 4", key: "thu4" },
+    { label: "Thứ 5", key: "thu5" },
+    { label: "Thứ 6", key: "thu6" },
+    { label: "Thứ 7", key: "thu7" },
+    { label: "Chủ Nhật", key: "cn" }
+  ];
+  const slotsDefault = [{ id: "ca1", title: "Sáng" }, { id: "ca2", title: "Chiều" }];
+  const slotsCN = [{ id: "ca2", title: "Chiều" }];
+  const MAX = 3;
 
-  const board = document.getElementById('board');
-  const resetBtn = document.getElementById('resetBtn');
-  const adminBtn = document.getElementById('adminBtn');
-  const logoutBtn = document.getElementById('logoutBtn');
-  const toggleOpenBtn = document.getElementById('toggleOpenBtn');
-  const statusBanner = document.getElementById('statusBanner');
+  const board = document.getElementById('board');
+  const resetBtn = document.getElementById('resetBtn');
+  const adminBtn = document.getElementById('adminBtn');
+  const logoutBtn = document.getElementById('logoutBtn');
+  const toggleOpenBtn = document.getElementById('toggleOpenBtn');
+  const statusBanner = document.getElementById('statusBanner');
+  const ADMIN_PASSWORD = "Anbinh123";
 
-  const clearNameBtn = document.createElement('button');
-  clearNameBtn.className = 'btn';
-  clearNameBtn.style.background = '#f59e0b';
-  clearNameBtn.style.display = 'none';
-  clearNameBtn.textContent = '🧹 Xóa tên máy khách';
-  document.querySelector('.admin-panel').appendChild(clearNameBtn);
+  const clearNameBtn = document.createElement('button');
+  clearNameBtn.className = 'btn';
+  clearNameBtn.style.background = '#f59e0b';
+  clearNameBtn.style.display = 'none';
+  clearNameBtn.textContent = '🧹 Xóa tên máy khách';
+  document.querySelector('.admin-panel').appendChild(clearNameBtn);
 
-  clearNameBtn.onclick = () => {
-    const nameToRemove = prompt('Nhập tên cần xóa trên máy khách:');
-    if (!nameToRemove) return;
-    blacklistRef.child(nameToRemove).set(true);
-    alert(`✅ Đã thêm "${nameToRemove}" vào danh sách xoá`);
-  };
+  clearNameBtn.onclick = () => {
+    const nameToRemove = prompt('Nhập tên cần xóa trên máy khách:');
+    if (!nameToRemove) return;
+    blacklistRef.child(nameToRemove).set(true);
+    alert(`✅ Đã thêm "${nameToRemove}" vào danh sách xoá`);
+  };
 
-  function buildGrid() {
-    board.innerHTML = '';
-    days.forEach(day => {
-      const col = document.createElement('div');
-      col.className = 'col';
-      col.innerHTML = `<h3>${day.label}</h3>`;
-      const slots = (day.key === 'cn') ? slotsCN : slotsDefault;
-      slots.forEach(s => {
-        const shiftId = `${day.key}_${s.id}`;
-        col.innerHTML += `
-          <div class="shift">
-            <div class="meta"><div class="title">${s.title}</div></div>
-            <div class="progress"><div class="bar" id="bar_${shiftId}"></div></div>
-            <div class="list" id="list_${shiftId}"></div>
-            <button class="btn" id="btn_${shiftId}" onclick="onRegister('${shiftId}')">Đăng ký</button>
-          </div>`;
-      });
-      board.appendChild(col);
-    });
-  }
-  buildGrid();
+  function buildGrid() {
+    board.innerHTML = '';
+    days.forEach(day => {
+      const col = document.createElement('div');
+      col.className = 'col';
+      col.innerHTML = `<h3>${day.label}</h3>`;
+      const slots = (day.key === 'cn') ? slotsCN : slotsDefault;
+      slots.forEach(s => {
+        const shiftId = `${day.key}_${s.id}`;
+        col.innerHTML += `
+          <div class="shift">
+            <div class="meta"><div class="title">${s.title}</div></div>
+            <div class="progress"><div class="bar" id="bar_${shiftId}"></div></div>
+            <div class="list" id="list_${shiftId}"></div>
+            <button class="btn" id="btn_${shiftId}" onclick="onRegister('${shiftId}')">Đăng ký</button>
+          </div>`;
+      });
+      board.appendChild(col);
+    });
+  }
+  buildGrid();
 
-  shiftsRef.on('value', snap => {
-    const data = snap.val() || {};
-    days.forEach(day => {
-      const slots = (day.key === 'cn') ? slotsCN : slotsDefault;
-      slots.forEach(s => updateShiftUI(`${day.key}_${s.id}`, data[`${day.key}_${s.id}`] || []));
-    });
-  });
+  shiftsRef.on('value', snap => {
+    const data = snap.val() || {};
+    days.forEach(day => {
+      const slots = (day.key === 'cn') ? slotsCN : slotsDefault;
+      slots.forEach(s => updateShiftUI(`${day.key}_${s.id}`, data[`${day.key}_${s.id}`] || []));
+    });
+  });
 
-  function updateShiftUI(id, arr) {
-    const listEl = document.getElementById('list_' + id);
-    const barEl = document.getElementById('bar_' + id);
-    const btnEl = document.getElementById('btn_' + id);
-    const myName = localStorage.getItem('myName');
-    listEl.innerHTML = '';
-    arr.forEach(name => {
-      const p = document.createElement('div');
-      p.className = 'person';
-      p.innerHTML = `
-        <div style="display:flex;align-items:center;gap:8px">
-          <div class="avatar">${name.slice(0,1).toUpperCase()}</div>
-          <div>${name}</div>
-        </div>`;
-      if (myName && myName === name) {
-        const del = document.createElement('span');
-        del.className = 'delete-btn';
-        del.textContent = '❌';
-        del.onclick = () => removeSelfFromShift(id, name);
-        p.appendChild(del);
-      }
-      listEl.appendChild(p);
-    });
-    const pct = Math.min(100, (arr.length / MAX) * 100);
-    barEl.style.width = pct + '%';
-    btnEl.disabled = arr.length >= MAX;
-    btnEl.textContent = arr.length >= MAX ? 'Đã đầy' : 'Đăng ký';
-  }
+  function updateShiftUI(id, arr) {
+    const listEl = document.getElementById('list_' + id);
+    const barEl = document.getElementById('bar_' + id);
+    const btnEl = document.getElementById('btn_' + id);
+    const myName = localStorage.getItem('myName');
+    if (!listEl || !barEl || !btnEl) return;
+    
+    listEl.innerHTML = '';
+    arr.forEach(name => {
+      const p = document.createElement('div');
+      p.className = 'person';
+      p.innerHTML = `
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="avatar">${name.slice(0,1).toUpperCase()}</div>
+          <div>${name}</div>
+        </div>`;
+      if ((myName && myName === name) || sessionStorage.getItem('isAdmin')) { // Thêm điều kiện Admin có thể xóa
+        const del = document.createElement('span');
+        del.className = 'delete-btn';
+        del.textContent = '❌';
+        del.title = sessionStorage.getItem('isAdmin') ? 'Xóa người này (Admin)' : 'Xóa tên của bạn';
+        del.onclick = () => {
+            if (sessionStorage.getItem('isAdmin')) {
+              if (!confirm(`⚠️ Admin xác nhận xóa "${name}" khỏi ca này?`)) return;
+            } else {
+              if (!confirm(`Bạn có chắc muốn xóa "${name}" khỏi ca này?`)) return;
+            }
+            removeSelfFromShift(id, name);
+          };
+        p.appendChild(del);
+      }
+      listEl.appendChild(p);
+    });
+    const pct = Math.min(100, (arr.length / MAX) * 100);
+    barEl.style.width = pct + '%';
+    btnEl.disabled = arr.length >= MAX;
+    btnEl.textContent = arr.length >= MAX ? 'Đã đầy' : 'Đăng ký';
+  }
 
-  function onRegister(shiftId) {
-    if (!isRegistrationOpen() && !sessionStorage.getItem('isAdmin')) {
-      alert("🔒 Ngoài giờ đăng ký (chỉ mở 19:50 Thứ 6 → 21:00 Thứ 7 hoặc admin mở thủ công)");
-      return;
+  function onRegister(shiftId) {
+    if (!isRegistrationOpen() && !sessionStorage.getItem('isAdmin')) {
+      alert("🔒 Ngoài giờ đăng ký (chỉ mở 19:50 Thứ 6 → 21:00 Thứ 7 hoặc admin mở thủ công)");
+      return;
+    }
+
+    let name = localStorage.getItem('myName');
+    if (!name) {
+      name = prompt('Nhập tên của bạn:');
+      if (!name) return;
+      name = name.trim();
+      if (!name) return;
+      localStorage.setItem('myName', name);
+    }
+    const ref = db.ref('shifts/' + shiftId);
+    ref.transaction(current => {
+      if (!current) current = [];
+      if (current.includes(name) || current.length >= MAX) return current;
+      current.push(name);
+      return current;
+    });
+  }
+
+  function removeSelfFromShift(shiftId, name) {
+    const ref = db.ref('shifts/' + shiftId);
+    ref.transaction(current => {
+      if (!current) return current;
+      return current.filter(n => n !== name);
+    });
+  }
+
+    // Hàm cập nhật trạng thái UI của nút Mở/Tắt ngoài giờ
+    function updateToggleOpenBtnUI() {
+        toggleOpenBtn.textContent = manualOpen ? "🔴 Tắt mở ngoài giờ" : "🟢 Mở đăng ký ngoài giờ";
+        toggleOpenBtn.style.background = manualOpen ? "#ef4444" : "#10b981";
     }
 
-    let name = localStorage.getItem('myName');
-    if (!name) {
-      name = prompt('Nhập tên của bạn:');
-      if (!name) return;
-      name = name.trim();
-      if (!name) return;
-      localStorage.setItem('myName', name);
-    }
-    const ref = db.ref('shifts/' + shiftId);
-    ref.transaction(current => {
-      if (!current) current = [];
-      if (current.includes(name) || current.length >= MAX) return current;
-      current.push(name);
-      return current;
-    });
-  }
+  function setAdminMode(on) {
+    // Cần dùng adminNoteInput từ script bên dưới, dùng kiểm tra an toàn
+    const adminNoteInputEl = document.getElementById('adminNoteInput'); 
+    if (on) {
+      resetBtn.style.display = 'inline-block';
+      logoutBtn.style.display = 'inline-block';
+      adminBtn.style.display = 'none';
+      toggleOpenBtn.style.display = 'inline-block';
+      clearNameBtn.style.display = 'inline-block';
+      sessionStorage.setItem('isAdmin', 'true');
+      if (adminNoteInputEl) adminNoteInputEl.style.display = noteVisible ? "block" : "none";
+    } else {
+      resetBtn.style.display = 'none';
+      logoutBtn.style.display = 'none';
+      adminBtn.style.display = 'inline-block';
+      toggleOpenBtn.style.display = 'none';
+      clearNameBtn.style.display = 'none';
+      sessionStorage.removeItem('isAdmin');
+      if (adminNoteInputEl) adminNoteInputEl.style.display = "none";
+    }
 
-  function removeSelfFromShift(shiftId, name) {
-    if (!confirm(`Bạn có chắc muốn xóa "${name}" khỏi ca này?`)) return;
-    const ref = db.ref('shifts/' + shiftId);
-    ref.transaction(current => {
-      if (!current) return current;
-      return current.filter(n => n !== name);
-    });
-  }
-
-  const ADMIN_PASSWORD = "Anbinh123";
-  function setAdminMode(on) {
-    if (on) {
-      resetBtn.style.display = 'inline-block';
-      logoutBtn.style.display = 'inline-block';
-      adminBtn.style.display = 'none';
-      toggleOpenBtn.style.display = 'inline-block';
-      clearNameBtn.style.display = 'inline-block';
-      sessionStorage.setItem('isAdmin', 'true');
-      // kiểm tra an toàn: adminNoteInput có thể được khai báo sau (trong thẻ script khác)
-      if (typeof adminNoteInput !== 'undefined') {
-        adminNoteInput.style.display = noteVisible ? "block" : "none";
-      }
-    } else {
-      resetBtn.style.display = 'none';
-      logoutBtn.style.display = 'none';
-      adminBtn.style.display = 'inline-block';
-      toggleOpenBtn.style.display = 'none';
-      clearNameBtn.style.display = 'none';
-      sessionStorage.removeItem('isAdmin');
-      if (typeof adminNoteInput !== 'undefined') {
-        adminNoteInput.style.display = "none";
-      }
-    }
-  }
-
-  adminBtn.onclick = () => {
-    const pass = prompt('Nhập mật khẩu Admin:');
-    if (pass === ADMIN_PASSWORD) {
-      alert('✅ Đã đăng nhập Admin');
-      setAdminMode(true);
-    } else alert('❌ Sai mật khẩu');
-  };
-  logoutBtn.onclick = () => { alert('🚪 Đã đăng xuất'); setAdminMode(false); };
-  resetBtn.onclick = () => {
-    if (!confirm('Reset toàn bộ lịch tuần?')) return;
-    const updates = {};
-    days.forEach(day => {
-      const slots = (day.key === 'cn') ? slotsCN : slotsDefault;
-      slots.forEach(s => updates[`${day.key}_${s.id}`] = []);
-    });
-    shiftsRef.set(updates);
-  };
-  if (sessionStorage.getItem('isAdmin') === 'true') setAdminMode(true);
-
-  toggleOpenBtn.onclick = () => {
-    manualOpen = !manualOpen;
-    manualOpenRef.set(manualOpen);
-    toggleOpenBtn.textContent = manualOpen ? "🔴 Tắt mở ngoài giờ" : "🟢 Mở đăng ký ngoài giờ";
-    toggleOpenBtn.style.background = manualOpen ? "#ef4444" : "#10b981";
-    alert(manualOpen ? "✅ Đã bật đăng ký ngoài giờ cho mọi người" : "🔒 Đã tắt đăng ký ngoài giờ");
+    updateToggleOpenBtnUI(); // Cập nhật nút Admin
     updateButtonStates();
-  };
+  }
 
-  manualOpenRef.on('value', snap => {
-    manualOpen = !!snap.val();
-    updateButtonStates();
-  });
+  adminBtn.onclick = () => {
+    const pass = prompt('Nhập mật khẩu Admin:');
+    if (pass === ADMIN_PASSWORD) {
+      alert('✅ Đã đăng nhập Admin');
+      setAdminMode(true);
+    } else alert('❌ Sai mật khẩu');
+  };
+  logoutBtn.onclick = () => { alert('🚪 Đã đăng xuất'); setAdminMode(false); };
+  resetBtn.onclick = () => {
+    if (!confirm('Reset toàn bộ lịch tuần?')) return;
+    const updates = {};
+    days.forEach(day => {
+      const slots = (day.key === 'cn') ? slotsCN : slotsDefault;
+      slots.forEach(s => updates[`${day.key}_${s.id}`] = []);
+    });
+    shiftsRef.set(updates);
+  };
+  if (sessionStorage.getItem('isAdmin') === 'true') setAdminMode(true);
 
-  blacklistRef.on('value', snap => {
-    const list = snap.val() || {};
-    const myName = localStorage.getItem('myName');
-    if (myName && list[myName]) {
-      alert('⚠️ Tên cũ của bạn đã bị admin xoá, vui lòng nhập lại tên mới.');
-      localStorage.removeItem('myName');
+  toggleOpenBtn.onclick = () => {
+    // ✅ FIX LỖI: Chỉ gửi giá trị lên Firebase
+    const newState = !manualOpen;
+    manualOpenRef.set(newState);
+    alert(newState ? "✅ Đã bật đăng ký ngoài giờ cho mọi người" : "🔒 Đã tắt đăng ký ngoài giờ");
+  };
+
+  manualOpenRef.on('value', snap => {
+    manualOpen = !!snap.val();
+    
+    // ✅ FIX LỖI: Toàn bộ việc cập nhật UI sau khi Admin bật/tắt phải nằm ở đây để đồng bộ
+    if (sessionStorage.getItem('isAdmin')) {
+        updateToggleOpenBtnUI(); // Cập nhật nút Admin trên máy Admin
     }
-  });
+    updateButtonStates(); // Cập nhật trạng thái Đăng ký cho tất cả máy khách
+  });
 
-  function isRegistrationOpen() {
-    if (manualOpen) return true;
-    const now = new Date();
-    const day = now.getDay();
-    const hour = now.getHours();
-    const minute = now.getMinutes();
-    return (day === 5 && (hour > 19 || (hour === 19 && minute >= 50))) ||
-           (day === 6 && (hour < 21 || (hour === 21 && minute === 0)));
-  }
+  blacklistRef.on('value', snap => {
+    const list = snap.val() || {};
+    const myName = localStorage.getItem('myName');
+    if (myName && list[myName]) {
+      alert('⚠️ Tên cũ của bạn đã bị admin xoá, vui lòng nhập lại tên mới.');
+      localStorage.removeItem('myName');
+    }
+  });
 
-  function updateButtonStates() {
-    const isOpen = isRegistrationOpen() || sessionStorage.getItem('isAdmin');
-    const buttons = document.querySelectorAll(".btn");
-    buttons.forEach(btn => {
-      if (["adminBtn","resetBtn","logoutBtn","toggleOpenBtn",""].includes(btn.id)) return;
-      if (btn === clearNameBtn) return;
-      btn.disabled = !isOpen;
-      btn.style.opacity = isOpen ? "1" : "0.45";
-      btn.title = isOpen ? "" : "Ngoài giờ đăng ký";
-    });
-    if (isOpen) {
-      statusBanner.style.background = "rgba(16,185,129,0.15)";
-      statusBanner.style.color = "#10b981";
-      statusBanner.textContent = manualOpen ? "🟢 Đăng ký đang mở (Admin bật thủ công)" : "🟢 Đang trong thời gian đăng ký";
-    } else {
-      statusBanner.style.background = "rgba(239,68,68,0.15)";
-      statusBanner.style.color = "#ef4444";
-      statusBanner.textContent = "🔒 Ngoài giờ đăng ký (sẽ mở 19:50 Thứ 6)";
-    }
-  }
-  updateButtonStates();
-  setInterval(updateButtonStates, 60000);
+  function isRegistrationOpen() {
+    if (manualOpen) return true;
+    const now = new Date();
+    const day = now.getDay();
+    const hour = now.getHours();
+    const minute = now.getMinutes();
+    return (day === 5 && (hour > 19 || (hour === 19 && minute >= 50))) ||
+           (day === 6 && (hour < 21 || (hour === 21 && minute === 0)));
+  }
+
+  function updateButtonStates() {
+    const isOpen = isRegistrationOpen() || sessionStorage.getItem('isAdmin');
+    const buttons = document.querySelectorAll(".btn");
+    
+    buttons.forEach(btn => {
+      // Chỉ áp dụng logic disabled cho các nút Đăng ký ca trực (có ID bắt đầu bằng btn_)
+      if (btn.id && btn.id.startsWith('btn_')) {
+        btn.disabled = !isOpen;
+        btn.style.opacity = isOpen ? "1" : "0.45";
+        btn.title = isOpen ? "" : "Ngoài giờ đăng ký";
+      }
+    });
+    
+    // Cập nhật Banner trạng thái
+    if (isOpen) {
+      statusBanner.style.background = "rgba(16,185,129,0.15)";
+      statusBanner.style.color = "#10b981";
+      statusBanner.textContent = manualOpen ? "🟢 Đăng ký đang mở (Admin bật thủ công)" : "🟢 Đang trong thời gian đăng ký";
+    } else {
+      statusBanner.style.background = "rgba(239,68,68,0.15)";
+      statusBanner.style.color = "#ef4444";
+      statusBanner.textContent = "🔒 Ngoài giờ đăng ký (sẽ mở 19:50 Thứ 6)";
+    }
+  }
+  updateButtonStates();
+  setInterval(updateButtonStates, 60000);
 </script>
 
-<!-- ✅ Ghi chú Admin realtime -->
 <div id="adminNoteToggle">📝</div>
 <div id="adminNoteBox">
-  <textarea id="adminNoteInput" placeholder="✏️ Nhập ghi chú cho mọi người..."></textarea>
-  <div id="adminNoteDisplay">📝 <span id="adminNoteText" class="placeholder">Không có ghi chú nào</span></div>
+  <textarea id="adminNoteInput" placeholder="✏️ Nhập ghi chú cho mọi người..."></textarea>
+  <div id="adminNoteDisplay">📝 <span id="adminNoteText" class="placeholder">Không có ghi chú nào</span></div>
 </div>
 
-<style>
-  #adminNoteToggle {
-    position: fixed;
-    bottom: 18px;
-    right: 18px;
-    width: 42px;
-    height: 42px;
-    background: linear-gradient(135deg, #6b46c1, #3b82f6);
-    color: white;
-    font-size: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    cursor: pointer;
-    z-index: 1100;
-  }
-  /* Tăng kích thước khung 1.5x so với ban đầu */
-  #adminNoteBox {
-    position: fixed;
-    bottom: 70px;
-    right: 16px;
-    background: rgba(11,18,32,0.97);
-    border: 1px solid rgba(255,255,255,0.06);
-    border-radius: 12px;
-    padding: 15px; /* tăng padding */
-    width: 450px; /* từ 300px -> 450px */
-    max-height: 300px; /* từ 200px -> 300px */
-    overflow-y: auto;
-    display: none;
-    z-index: 1100;
-    font-size: 1.05em;
-  }
-  #adminNoteInput {
-    width: 100%;
-    min-height: 120px; /* tăng chiều cao */
-    max-height: 250px;
-    background: rgba(255,255,255,0.05);
-    border: none;
-    color: white;
-    padding: 10px;
-    border-radius: 8px;
-    resize: vertical;
-    margin-bottom: 8px;
-    display: none;
-  }
-  #adminNoteDisplay { font-size: 15px; color: #d1d5db; white-space: pre-wrap; }
-  /* placeholder mờ */
-  #adminNoteText.placeholder {
-    opacity: 0.5;
-    font-style: italic;
-  }
-
-  /* responsive nhỏ màn hình: giữ hợp lý */
-  @media(max-width:480px){
-    #adminNoteBox { width: calc(100% - 32px); right: 16px; left: 16px; bottom: 80px; }
-    #adminNoteInput { min-height: 100px; }
-  }
-</style>
-
 <script>
-  const adminNoteToggle = document.getElementById("adminNoteToggle");
-  const adminNoteBox = document.getElementById("adminNoteBox");
-  const adminNoteInput = document.getElementById("adminNoteInput");
-  const adminNoteText = document.getElementById("adminNoteText");
-  let noteVisible = false;
+  const adminNoteToggle = document.getElementById("adminNoteToggle");
+  const adminNoteBox = document.getElementById("adminNoteBox");
+  const adminNoteInput = document.getElementById("adminNoteInput");
+  const adminNoteText = document.getElementById("adminNoteText");
+  let noteVisible = false;
 
-  adminNoteToggle.onclick = () => {
-    noteVisible = !noteVisible;
-    adminNoteBox.style.display = noteVisible ? "block" : "none";
-    // chỉ hiện input nếu đang là admin
-    adminNoteInput.style.display = (noteVisible && sessionStorage.getItem("isAdmin")) ? "block" : "none";
-  };
+  adminNoteToggle.onclick = () => {
+    noteVisible = !noteVisible;
+    adminNoteBox.style.display = noteVisible ? "block" : "none";
+    adminNoteInput.style.display = (noteVisible && sessionStorage.getItem("isAdmin")) ? "block" : "none";
+  };
 
-  // Hiển thị ghi chú với placeholder mờ khi trống
-  adminNoteRef.on("value", snap => {
-    const val = snap.val() || "";
-    if (!val.trim()) {
-      adminNoteText.textContent = "Không có ghi chú nào";
-      adminNoteText.classList.add("placeholder");
-    } else {
-      adminNoteText.textContent = val;
-      adminNoteText.classList.remove("placeholder");
-    }
-    // Đồng bộ giá trị input (nếu có)
-    if (typeof adminNoteInput !== 'undefined') adminNoteInput.value = val;
-  });
+  adminNoteRef.on("value", snap => {
+    const val = snap.val() || "";
+    if (!val.trim()) {
+      adminNoteText.textContent = "Không có ghi chú nào";
+      adminNoteText.classList.add("placeholder");
+    } else {
+      adminNoteText.textContent = val;
+      adminNoteText.classList.remove("placeholder");
+    }
+    if (typeof adminNoteInput !== 'undefined') adminNoteInput.value = val;
+  });
 
-  // Khi admin nhập → lưu realtime và cập nhật hiển thị
-  adminNoteInput.addEventListener("input", () => {
-    if (!sessionStorage.getItem("isAdmin")) return;
-    const text = adminNoteInput.value;
-    // Lưu chính xác giá trị (cho phép rỗng)
-    adminNoteRef.set(text.trim());
-    if (!text.trim()) {
-      adminNoteText.textContent = "Không có ghi chú nào";
-      adminNoteText.classList.add("placeholder");
-    } else {
-      adminNoteText.classList.remove("placeholder");
-    }
-  });
+  adminNoteInput.addEventListener("input", () => {
+    if (!sessionStorage.getItem("isAdmin")) return;
+    const text = adminNoteInput.value;
+    adminNoteRef.set(text.trim());
+    if (!text.trim()) {
+      adminNoteText.textContent = "Không có ghi chú nào";
+      adminNoteText.classList.add("placeholder");
+    } else {
+      adminNoteText.classList.remove("placeholder");
+    }
+  });
 </script>
-
 </body>
 </html>
