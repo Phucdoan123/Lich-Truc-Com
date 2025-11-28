@@ -555,12 +555,9 @@
 
 
   manualOpenRef.on('value', snap => {
-
-    manualOpen = !!snap.val();
-
-    updateButtonStates();
-
-  });
+    manualOpen = snap.val() === true; // Đã sửa lỗi đồng bộ hóa giá trị Boolean
+    updateButtonStates();
+  });
 
 
 
@@ -895,4 +892,5 @@
 </body>
 
 </html>
+
 
