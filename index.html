@@ -311,11 +311,12 @@
   }
 
   function updateButtonStates() {
-    const isOpen = isRegistrationOpen() || sessionStorage.getItem('isAdmin');
+    // --- CHỈ SỬA NHỎ Ở ĐÂY: đảm bảo so sánh isAdmin đúng và so sánh trực tiếp nút để không vô tình disable toggleOpenBtn ---
+    const isOpen = isRegistrationOpen() || sessionStorage.getItem('isAdmin') === 'true';
     const buttons = document.querySelectorAll(".btn");
     buttons.forEach(btn => {
-      if (["adminBtn","resetBtn","logoutBtn","toggleOpenBtn",""].includes(btn.id)) return;
-      if (btn === clearNameBtn) return;
+      // skip the admin control buttons and the dynamically created clearNameBtn by direct reference
+      if (btn === adminBtn || btn === resetBtn || btn === logoutBtn || btn === toggleOpenBtn || btn === clearNameBtn) return;
       btn.disabled = !isOpen;
       btn.style.opacity = isOpen ? "1" : "0.45";
       btn.title = isOpen ? "" : "Ngoài giờ đăng ký";
