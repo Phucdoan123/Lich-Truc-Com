@@ -79,6 +79,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 
 <script>
+  // Cấu hình Firebase (giữ nguyên của bạn)
   const firebaseConfig = {
     apiKey: "AIzaSyCZ8o7Z855RhsncCZlEt4zDe6ps-29RAq0",
     authDomain: "lich-truc-com.firebaseapp.com",
@@ -117,6 +118,7 @@
   const toggleOpenBtn = document.getElementById('toggleOpenBtn');
   const statusBanner = document.getElementById('statusBanner');
 
+  // tạo nút xóa tên máy khách (Admin helper)
   const clearNameBtn = document.createElement('button');
   clearNameBtn.className = 'btn';
   clearNameBtn.style.background = '#f59e0b';
@@ -166,6 +168,7 @@
     const barEl = document.getElementById('bar_' + id);
     const btnEl = document.getElementById('btn_' + id);
     const myName = localStorage.getItem('myName');
+    if (!listEl || !barEl || !btnEl) return;
     listEl.innerHTML = '';
     arr.forEach(name => {
       const p = document.createElement('div');
@@ -205,7 +208,9 @@
     }
     let name = localStorage.getItem('myName');
     if (!name) {
-      name = prompt('Nhập tên của bạn:').trim();
+      name = prompt('Nhập tên của bạn:');
+      if (!name) return;
+      name = name.trim();
       if (!name) return;
       localStorage.setItem('myName', name);
     }
@@ -227,7 +232,11 @@
   }
 
   const ADMIN_PASSWORD = "Anbinh123";
+
+  // LƯU Ý: thay vì dùng biến DOM 'adminNoteInput' có thể chưa tồn tại,
+  // ta truy vấn trực tiếp khi cần để tránh lỗi "undefined" làm dừng script.
   function setAdminMode(on) {
+    const adminNoteInputEl = document.getElementById('adminNoteInput'); // có thể null nếu DOM chưa load phần admin note
     if (on) {
       resetBtn.style.display = 'inline-block';
       logoutBtn.style.display = 'inline-block';
@@ -235,7 +244,7 @@
       toggleOpenBtn.style.display = 'inline-block';
       clearNameBtn.style.display = 'inline-block';
       sessionStorage.setItem('isAdmin', 'true');
-      adminNoteInput.style.display = noteVisible ? "block" : "none";
+      if (adminNoteInputEl) adminNoteInputEl.style.display = noteVisible ? "block" : "none";
     } else {
       resetBtn.style.display = 'none';
       logoutBtn.style.display = 'none';
@@ -243,7 +252,7 @@
       toggleOpenBtn.style.display = 'none';
       clearNameBtn.style.display = 'none';
       sessionStorage.removeItem('isAdmin');
-      adminNoteInput.style.display = "none";
+      if (adminNoteInputEl) adminNoteInputEl.style.display = "none";
     }
 
     // ✅ Dòng fix để banner cập nhật ngay khi đổi quyền
@@ -294,7 +303,7 @@
   function isRegistrationOpen() {
     if (manualOpen) return true;
     const now = new Date();
-    const day = now.getDay();
+    const day = now.getDay(); // 0 CN, 1 T2, ..., 6 T7
     const hour = now.getHours();
     const minute = now.getMinutes();
     return (day === 5 && (hour > 19 || (hour === 19 && minute >= 50))) ||
@@ -377,6 +386,7 @@
 </style>
 
 <script>
+  // Biến DOM cho admin note, được sử dụng ở phần UI admin note (đây sẽ tồn tại vì phần HTML admin note đã xuất hiện trước script này).
   const adminNoteToggle = document.getElementById('adminNoteToggle');
   const adminNoteBox = document.getElementById('adminNoteBox');
   const adminNoteInput = document.getElementById('adminNoteInput');
@@ -387,18 +397,22 @@
   adminNoteToggle.onclick = () => {
     noteVisible = !noteVisible;
     adminNoteBox.style.display = noteVisible ? "block" : "none";
-    if (sessionStorage.getItem('isAdmin')) adminNoteInput.style.display = noteVisible ? "block" : "none";
+    if (sessionStorage.getItem('isAdmin')) {
+      if (adminNoteInput) adminNoteInput.style.display = noteVisible ? "block" : "none";
+    }
   };
 
   adminNoteRef.on('value', snap => {
     const text = snap.val() || "Không có ghi chú nào";
-    adminNoteText.textContent = text;
+    if (adminNoteText) adminNoteText.textContent = text;
   });
 
-  adminNoteInput.oninput = e => {
-    const txt = e.target.value.trim();
-    adminNoteRef.set(txt);
-  };
+  if (adminNoteInput) {
+    adminNoteInput.oninput = e => {
+      const txt = e.target.value.trim();
+      adminNoteRef.set(txt);
+    };
+  }
 </script>
 
 </body>
